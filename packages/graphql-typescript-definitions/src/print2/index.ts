@@ -26,6 +26,7 @@ export interface File {
 
 export interface Options {
   schemaTypesPath: string;
+  addTypename?: boolean;
 }
 
 const scalarTypeMap = {
@@ -39,15 +40,22 @@ const scalarTypeMap = {
 export function printFile(
   {operations, fragments, path}: File,
   ast: AST,
-  {schemaTypesPath}: Options,
+  options: Options,
 ) {
+  const {schemaTypesPath} = options;
   const operation = operations[0];
   const {operationName, operationType, fields} = operation;
 
-  const context = new OperationContext();
+  const context = new OperationContext(options);
+  const type = ast.schema.getQueryType();
 
   const body = fields.map((field) =>
-    tsPropertyForField(field, new ObjectStack(), context),
+    tsPropertyForField(
+      field,
+      undefined,
+      new ObjectStack(type as any, []),
+      context,
+    ),
   );
 
   const operationTypeName = `${ucFirst(operationName)}${ucFirst(
@@ -134,29 +142,60 @@ export function printFile(
 }
 
 function tsInterfaceForObjectField(
-  {responseName, fields = []}: Field,
+  {fields = []}: Field,
   graphQLType: GraphQLObjectType,
   stack: ObjectStack,
   context: OperationContext,
 ) {
-  stack.push(ucFirst(responseName));
-  const name = `${stack.name}${ucFirst(graphQLType.name)}`;
-  const body = fields.map((field) => tsPropertyForField(field, stack, context));
-  stack.pop();
+  const uniqueFields = fields.filter((field) => {
+    if (stack.hasSeenField(field)) {
+      return false;
+    }
+
+    stack.sawField(field);
+    return true;
+  });
+
+  const typenameField = {
+    fieldName: '__typename',
+    responseName: '__typename',
+    type: GraphQLString,
+    isConditional: false,
+  };
+
+  const typename =
+    context.options.addTypename && !stack.hasSeenField(typenameField)
+      ? tsPropertyForField(typenameField, graphQLType, stack, context)
+      : null;
+
+  const body = uniqueFields.map((field) =>
+    tsPropertyForField(field, graphQLType, stack, context),
+  );
 
   return t.tsInterfaceDeclaration(
-    t.identifier(name),
+    t.identifier(stack.name),
     null,
     null,
-    t.tsInterfaceBody(body),
+    t.tsInterfaceBody(typename ? [typename, ...body] : body),
   );
 }
 
 function tsPropertyForField(
   field: Field,
+  parentType: GraphQLObjectType | undefined,
   stack: ObjectStack,
   context: OperationContext,
 ) {
+  if (field.fieldName === '__typename' && parentType) {
+    const typenameProperty = t.tsPropertySignature(
+      t.identifier(field.responseName),
+      t.tsTypeAnnotation(t.tsLiteralType(t.stringLiteral(parentType.name))),
+    );
+
+    typenameProperty.optional = field.isConditional;
+    return typenameProperty;
+  }
+
   const property = t.tsPropertySignature(
     t.identifier(field.responseName),
     t.tsTypeAnnotation(tsTypeForGraphQLType(field.type, field, stack, context)),
@@ -200,7 +239,7 @@ function tsTypeForGraphQLType(
     const objectInterface = tsInterfaceForObjectField(
       field,
       unwrapedGraphQLType,
-      stack,
+      stack.nested(field, unwrapedGraphQLType),
       context,
     );
     context.export(objectInterface);
@@ -233,6 +272,8 @@ class OperationContext {
   private exportedTypes: NamespaceExportableType[] = [];
   private importedTypes = new Set<string>();
 
+  constructor(public options: Options) {}
+
   export(type: NamespaceExportableType) {
     this.exportedTypes.push(type);
   }
@@ -243,17 +284,30 @@ class OperationContext {
 }
 
 class ObjectStack {
+  private seenFields = new Set<string>();
+
   get name() {
-    return this.parentFields.join('');
+    return (
+      this.parentFields
+        .map(({responseName}) => ucFirst(responseName))
+        .join('') + ucFirst(this.type.name)
+    );
   }
 
-  private parentFields: string[] = [];
+  constructor(
+    private type: GraphQLObjectType,
+    private parentFields: Field[] = [],
+  ) {}
 
-  push(name: string) {
-    this.parentFields.push(name);
+  nested(field: Field, type: GraphQLObjectType) {
+    return new ObjectStack(type, [...this.parentFields, field]);
   }
 
-  pop() {
-    this.parentFields.pop();
+  sawField(field: Field) {
+    this.seenFields.add(field.responseName);
+  }
+
+  hasSeenField(field: Field) {
+    return this.seenFields.has(field.responseName);
   }
 }

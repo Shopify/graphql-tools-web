@@ -364,6 +364,79 @@ describe('printFile()', () => {
         }
       `);
     });
+
+    describe('__typename', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      it('does not add a typename when the option is falsy', () => {
+        expect(
+          print('query Details { self { name } }', schema, {
+            printOptions: {addTypename: false},
+          }),
+        ).not.toContain('__typename');
+      });
+
+      it('adds an explicit typename when the option is truthy', () => {
+        expect(
+          print('query Details { self { name } }', schema, {
+            printOptions: {addTypename: true},
+          }),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface SelfPerson {
+              __typename: "Person";
+              name: string;
+            }
+          }
+          export interface DetailsQueryData {
+            self: SelfPerson;
+          }
+        `);
+      });
+
+      it('does not duplicate an explicit typename field', () => {
+        expect(
+          print('query Details { self { __typename } }', schema, {
+            printOptions: {addTypename: true},
+          }),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface SelfPerson {
+              __typename: "Person";
+            }
+          }
+          export interface DetailsQueryData {
+            self: SelfPerson;
+          }
+        `);
+      });
+
+      it('adds an explicit typename field when it is requested with a different responseName', () => {
+        expect(
+          print('query Details { self { type: __typename } }', schema, {
+            printOptions: {addTypename: true},
+          }),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface SelfPerson {
+              __typename: "Person";
+              type: "Person";
+            }
+          }
+          export interface DetailsQueryData {
+            self: SelfPerson;
+          }
+        `);
+      });
+    });
   });
 
   describe('directives', () => {
@@ -458,7 +531,7 @@ function expectedImportPath(from: string, to: string) {
 interface TestOptions {
   fragments?: {[key: string]: string};
   filename?: string;
-  printOptions?: Options;
+  printOptions?: Partial<Options>;
 }
 
 function print(
@@ -471,7 +544,7 @@ function print(
   }: TestOptions = {},
 ) {
   const finalOptions = {
-    addTypename: true,
+    addTypename: false,
     schemaTypesPath: path.resolve('Schema.ts'),
     ...printOptions,
   };
