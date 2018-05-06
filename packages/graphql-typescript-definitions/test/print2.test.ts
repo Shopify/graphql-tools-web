@@ -423,7 +423,7 @@ describe('printFile()', () => {
   });
 
   describe('document', () => {
-    it('imports DocumentNode from graphql', () => {
+    it('imports DocumentNode from graphql-typed', () => {
       const schema = buildSchema(`
         type Query {
           name: String!
@@ -431,11 +431,11 @@ describe('printFile()', () => {
       `);
 
       expect(print('query Details { name }', schema)).toContain(
-        'import { DocumentNode } from "graphql";',
+        'import { DocumentNode } from "graphql-typed";',
       );
     });
 
-    it('exports a DocumentNode as the default export', () => {
+    it('exports a DocumentNode as the default export with the operation data type annotation', () => {
       const schema = buildSchema(`
         type Query {
           name: String!
@@ -443,7 +443,7 @@ describe('printFile()', () => {
       `);
 
       expect(print('query Details { name }', schema)).toContain(stripIndent`
-        declare const document: DocumentNode;
+        declare const document: DocumentNode<DetailsQueryData>;
         export default document;
       `);
     });

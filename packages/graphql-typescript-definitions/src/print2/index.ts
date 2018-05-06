@@ -89,12 +89,17 @@ export function printFile(
         t.identifier('DocumentNode'),
       ),
     ],
-    t.stringLiteral('graphql'),
+    t.stringLiteral('graphql-typed'),
   );
 
   const documentNodeDeclaratorIdentifier = t.identifier('document');
   documentNodeDeclaratorIdentifier.typeAnnotation = t.tsTypeAnnotation(
-    t.tsTypeReference(t.identifier('DocumentNode')),
+    t.tsTypeReference(
+      t.identifier('DocumentNode'),
+      t.tsTypeParameterInstantiation([
+        t.tsTypeReference(t.identifier(operationTypeName)),
+      ]),
+    ),
   );
 
   const documentNodeDeclaration = t.variableDeclaration('const', [
