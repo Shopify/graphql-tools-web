@@ -18,10 +18,18 @@ export interface Variable {
   type: GraphQLInputType;
 }
 
+export interface Condition {
+  kind: string;
+  variableName: string;
+  inverted: boolean;
+}
+
 export interface Field {
   responseName: string;
   fieldName: string;
   type: GraphQLOutputType;
+  isConditional: boolean;
+  conditions?: Condition[];
   fields?: Field[];
   fragmentSpreads?: string[];
   inlineFragments?: InlineFragment[];
