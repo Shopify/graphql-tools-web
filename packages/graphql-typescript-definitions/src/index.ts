@@ -12,11 +12,12 @@ import {watch} from 'chokidar';
 import * as glob from 'glob';
 import {compile, Operation, Fragment, AST} from 'graphql-tool-utilities/ast';
 
-import {printFile} from './print';
+import {printFile} from './print2';
 
 export interface Options {
   graphQLFiles: string;
   schemaPath: string;
+  schemaTypesPath: string;
   addTypename: boolean;
 }
 
@@ -27,7 +28,7 @@ export interface RunOptions {
 export interface Build {
   documentPath: string;
   definitionPath: string;
-  operations: Operation[];
+  operation?: Operation;
   fragments: Fragment[];
 }
 
@@ -36,7 +37,7 @@ export class Builder extends EventEmitter {
   private globs: string;
   private schemaPath: string;
   private schema!: GraphQLSchema;
-  private options: Pick<Options, 'addTypename'>;
+  private options: Pick<Options, 'addTypename' | 'schemaTypesPath'>;
   private documentCache = new Map<string, DocumentNode>();
 
   constructor({graphQLFiles, schemaPath, ...options}: Options) {
@@ -168,7 +169,7 @@ export class Builder extends EventEmitter {
           return {
             documentPath: file.path,
             definitionPath,
-            operations: file.operations,
+            operation: file.operation,
             fragments: file.fragments,
           };
         }),
@@ -216,7 +217,7 @@ export class Builder extends EventEmitter {
 
 interface File {
   path: string;
-  operations: Operation[];
+  operation?: Operation;
   fragments: Fragment[];
 }
 
@@ -234,10 +235,9 @@ function groupOperationsAndFragmentsByFile({
     const operation = operations[name];
     const file = map[operation.filePath] || {
       path: operation.filePath,
-      operations: [],
+      operation,
       fragments: [],
     };
-    file.operations.push(operation);
     map[operation.filePath] = file;
   });
 
@@ -245,7 +245,7 @@ function groupOperationsAndFragmentsByFile({
     const fragment = fragments[name];
     const file = map[fragment.filePath] || {
       path: fragment.filePath,
-      operations: [],
+      operation: undefined,
       fragments: [],
     };
     file.fragments.push(fragment);

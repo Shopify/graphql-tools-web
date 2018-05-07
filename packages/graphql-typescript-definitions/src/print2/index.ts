@@ -18,9 +18,10 @@ import {
   isInterfaceType,
   isUnionType,
   GraphQLCompositeType,
+  GraphQLObjectType,
 } from 'graphql';
-import generate from '@babel/generator';
 import {
+  OperationType,
   Operation,
   Fragment,
   AST,
@@ -31,9 +32,11 @@ import {
   PrintableFieldDetails,
 } from 'graphql-tool-utilities/ast';
 
+const generate = require('@babel/generator').default;
+
 export interface File {
   path: string;
-  operations: Operation[];
+  operation?: Operation;
   fragments: Fragment[];
 }
 
@@ -50,37 +53,40 @@ const scalarTypeMap = {
   [GraphQLID.name]: t.tsStringKeyword(),
 };
 
-export function printFile(
-  {operations, path}: File,
-  ast: AST,
-  options: Options,
-) {
+export function printFile({operation, path}: File, ast: AST, options: Options) {
+  if (operation == null) {
+    return '';
+  }
+
   const {schemaTypesPath} = options;
-  const operation = operations[0];
-  const {fields} = operation;
 
   const context = new OperationContext(operation, ast, options);
-  const type = ast.schema.getQueryType();
+
+  let rootType: GraphQLObjectType;
+
+  if (operation.operationType === OperationType.Query) {
+    rootType = ast.schema.getQueryType() as any;
+  } else if (operation.operationType === OperationType.Mutation) {
+    rootType = ast.schema.getMutationType() as any;
+  } else {
+    rootType = ast.schema.getSubscriptionType() as any;
+  }
 
   const variables =
     operation.variables.filter(isTypedVariable).length > 0
       ? context.export(variablesInterface(operation.variables, context))
       : null;
 
-  const body = fields.map((field) =>
-    tsPropertyForField(
-      field,
-      undefined,
-      new ObjectStack(type as any, []),
-      context,
-    ),
-  );
-
   const operationInterface = t.tsInterfaceDeclaration(
     t.identifier(context.typeName),
     null,
     null,
-    t.tsInterfaceBody(body),
+    tsInterfaceBodyForObjectField(
+      operation,
+      rootType,
+      new ObjectStack(rootType, []),
+      context,
+    ),
   );
 
   const {imported, exported} = context;
@@ -193,7 +199,7 @@ function tsInterfaceBodyForObjectField(
 
 function tsTypeForInlineFragment(
   inlineFragment: InlineFragment,
-  graphQLType: GraphQLCompositeType,
+  _graphQLType: GraphQLCompositeType,
   stack: ObjectStack,
   context: OperationContext,
 ) {
@@ -285,7 +291,7 @@ function tsTypenameForGraphQLType(type: GraphQLCompositeType) {
 
 function tsPropertyForField(
   field: Field,
-  parentType: GraphQLCompositeType | GraphQLCompositeType[] | undefined,
+  parentType: GraphQLCompositeType | GraphQLCompositeType[],
   stack: ObjectStack,
   context: OperationContext,
 ) {
@@ -416,7 +422,7 @@ class ObjectStack {
   }
 
   constructor(
-    private type: GraphQLCompositeType,
+    _type: GraphQLCompositeType,
     private parentFields: Field[] = [],
   ) {}
 

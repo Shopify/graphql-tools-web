@@ -397,6 +397,7 @@ describe('printFile()', () => {
             }
           }
           export interface DetailsQueryData {
+            __typename: "Query";
             self: DetailsQueryData.Self;
           }
         `);
@@ -414,6 +415,7 @@ describe('printFile()', () => {
             }
           }
           export interface DetailsQueryData {
+            __typename: "Query";
             self: DetailsQueryData.Self;
           }
         `);
@@ -432,6 +434,7 @@ describe('printFile()', () => {
             }
           }
           export interface DetailsQueryData {
+            __typename: "Query";
             self: DetailsQueryData.Self;
           }
         `);
@@ -760,6 +763,7 @@ describe('printFile()', () => {
             }
           }
           export interface DetailsQueryData {
+            __typename: "Query";
             named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedDog | DetailsQueryData.NamedOther | null;
           }
         `);
@@ -1009,6 +1013,7 @@ describe('printFile()', () => {
             }
           }
           export interface DetailsQueryData {
+            __typename: "Query";
             named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedDog | DetailsQueryData.NamedOther | null;
           }
         `);
@@ -1049,6 +1054,7 @@ describe('printFile()', () => {
             }
           }
           export interface DetailsQueryData {
+            __typename: "Query";
             named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
           }
         `);
@@ -1249,6 +1255,126 @@ describe('printFile()', () => {
     });
   });
 
+  describe('query', () => {
+    it('prints a query type', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(print('query Details { name }', schema)).toContain(stripIndent`
+        export interface DetailsQueryData {
+          name: string;
+        }
+      `);
+    });
+
+    it('prints an implicit typename when the option is truthy', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(
+        print('query Details { name }', schema, {
+          printOptions: {addTypename: true},
+        }),
+      ).toContain(stripIndent`
+        export interface DetailsQueryData {
+          __typename: "Query";
+          name: string;
+        }
+      `);
+    });
+  });
+
+  describe('mutation', () => {
+    it('prints a mutation type', () => {
+      const schema = buildSchema(`
+        type RenamePayload {
+          name: String!
+        }
+
+        type Mutation {
+          rename(name: String!): RenamePayload!
+        }
+      `);
+
+      expect(print('mutation Rename { rename(name: "Foo") { name } }', schema))
+        .toContain(stripIndent`
+          export namespace RenameMutationData {
+            export interface Rename {
+              name: string;
+            }
+          }
+          export interface RenameMutationData {
+            rename: RenameMutationData.Rename;
+          }
+        `);
+    });
+
+    it('prints an implicit typename when the option is truthy', () => {
+      const schema = buildSchema(`
+        type RenamePayload {
+          name: String!
+        }
+
+        type Mutation {
+          rename(name: String!): RenamePayload!
+        }
+      `);
+
+      expect(
+        print('mutation Rename { rename(name: "Foo") { name } }', schema, {
+          printOptions: {addTypename: true},
+        }),
+      ).toContain(stripIndent`
+        export interface RenameMutationData {
+          __typename: "Mutation";
+          rename: RenameMutationData.Rename;
+        }
+      `);
+    });
+  });
+
+  describe('subscription', () => {
+    it('prints a subscription type', () => {
+      const schema = buildSchema(`
+        type Subscription {
+          name: String!
+        }
+      `);
+
+      expect(print('subscription Details { name }', schema))
+        .toContain(stripIndent`
+          export interface DetailsSubscriptionData {
+            name: string;
+          }
+        `);
+    });
+
+    it('prints an implicit typename when the option is truthy', () => {
+      const schema = buildSchema(`
+        type Subscription {
+          name: String!
+        }
+      `);
+
+      expect(
+        print('subscription Details { name }', schema, {
+          printOptions: {addTypename: true},
+        }),
+      ).toContain(stripIndent`
+        export interface DetailsSubscriptionData {
+          __typename: "Subscription";
+          name: string;
+        }
+      `);
+    });
+  });
+
   describe('document', () => {
     it('imports DocumentNode from graphql-typed', () => {
       const schema = buildSchema(`
@@ -1309,9 +1435,9 @@ function print(
   const ast = compile(schema, concatAST([document, ...fragmentDocuments]));
   const file = {
     path: filename,
-    operations: Object.keys(ast.operations)
+    operation: Object.keys(ast.operations)
       .map((key) => ast.operations[key])
-      .filter((operation) => operation.filePath === filename),
+      .filter((operation) => operation.filePath === filename)[0],
     fragments: Object.keys(ast.fragments)
       .map((key) => ast.fragments[key])
       .filter((fragment) => fragment.filePath === filename),

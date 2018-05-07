@@ -13,6 +13,12 @@ const {
   compileToLegacyIR: compileToIR,
 } = require('apollo-codegen/lib/compiler/legacyIR');
 
+export enum OperationType {
+  Query = 'query',
+  Mutation = 'mutation',
+  Subscription = 'subscription',
+}
+
 export interface Variable {
   name: string;
   type?: GraphQLInputType;
@@ -55,14 +61,12 @@ export interface Fragment extends InlineFragment {
   fields: Field[];
 }
 
-export interface Operation {
+export interface Operation extends PrintableFieldDetails {
   filePath: string;
   operationName: string;
   operationType: 'query' | 'mutation' | 'subscription';
   variables: Variable[];
-  fields: Field[];
   fragmentsReferenced: string[];
-  fragmentSpreads?: string[];
 }
 
 export interface AST {
