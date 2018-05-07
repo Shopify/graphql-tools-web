@@ -8,15 +8,24 @@ import {
   GraphQLBoolean,
   GraphQLID,
   GraphQLObjectType,
+  GraphQLInputType,
   isEnumType,
   isObjectType,
   isNonNullType,
   isScalarType,
   isListType,
   GraphQLType,
+  isInputObjectType,
 } from 'graphql';
 import generate from '@babel/generator';
-import {Operation, Fragment, AST, Field} from 'graphql-tool-utilities/ast';
+import {
+  Operation,
+  Fragment,
+  AST,
+  Field,
+  Variable,
+} from 'graphql-tool-utilities/ast';
+import {nullLiteral} from '@babel/types';
 
 export interface File {
   path: string;
@@ -69,13 +78,26 @@ export function printFile(
     t.tsInterfaceBody(body),
   );
 
+  const variables =
+    operation.variables.length > 0
+      ? t.exportNamedDeclaration(
+          variablesInterface(operation.variables, context),
+          [],
+        )
+      : null;
+
   const {imported, exported} = context;
+
+  const exportedStatements = exported.map((type) =>
+    t.exportNamedDeclaration(type, []),
+  );
+
   const namespace =
-    exported.length > 0
+    exported.length > 0 || variables != null
       ? t.tsModuleDeclaration(
           t.identifier(operationTypeName),
           t.tsModuleBlock(
-            exported.map((type) => t.exportNamedDeclaration(type, [])),
+            variables ? [variables, ...exportedStatements] : exportedStatements,
           ),
         )
       : null;
@@ -310,4 +332,64 @@ class ObjectStack {
   hasSeenField(field: Field) {
     return this.seenFields.has(field.responseName);
   }
+}
+
+function variablesInterface(variables: Variable[], context: OperationContext) {
+  return t.tsInterfaceDeclaration(
+    t.identifier('Variables'),
+    null,
+    null,
+    t.tsInterfaceBody(
+      variables.map((variable) => tsPropertyForVariable(variable, context)),
+    ),
+  );
+}
+
+function tsPropertyForVariable(
+  {name, type}: Variable,
+  context: OperationContext,
+) {
+  const property = t.tsPropertySignature(
+    t.identifier(name),
+    t.tsTypeAnnotation(tsTypeForGraphQLInputType(type, context)),
+  );
+
+  property.optional = !isNonNullType(type);
+  return property;
+}
+
+function tsTypeForGraphQLInputType(
+  graphQLType: GraphQLInputType,
+  context: OperationContext,
+) {
+  let type: t.TSType;
+
+  const unwrapedGraphQLType = isNonNullType(graphQLType)
+    ? graphQLType.ofType
+    : graphQLType;
+
+  if (isScalarType(unwrapedGraphQLType)) {
+    if (scalarTypeMap.hasOwnProperty(unwrapedGraphQLType.name)) {
+      type = scalarTypeMap[unwrapedGraphQLType.name];
+    } else {
+      context.import(unwrapedGraphQLType.name);
+      type = t.tsTypeReference(t.identifier(unwrapedGraphQLType.name));
+    }
+  } else if (
+    isEnumType(unwrapedGraphQLType) ||
+    isInputObjectType(unwrapedGraphQLType)
+  ) {
+    context.import(unwrapedGraphQLType.name);
+    type = t.tsTypeReference(t.identifier(unwrapedGraphQLType.name));
+  } else {
+    const {ofType} = unwrapedGraphQLType;
+    const arrayType = tsTypeForGraphQLInputType(ofType, context);
+    type = t.tsArrayType(
+      isNonNullType(ofType) ? arrayType : t.tsParenthesizedType(arrayType),
+    );
+  }
+
+  return isNonNullType(graphQLType)
+    ? type
+    : t.tsUnionType([type, t.tsNullKeyword()]);
 }

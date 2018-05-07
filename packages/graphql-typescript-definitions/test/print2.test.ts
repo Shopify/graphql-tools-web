@@ -439,6 +439,126 @@ describe('printFile()', () => {
     });
   });
 
+  describe.only('variables', () => {
+    it('does not output variables if the query does not accept them', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(print('query Details { name }', schema)).not.toContain(
+        'export interface Variables',
+      );
+    });
+
+    it('outputs out a variable declaration', () => {
+      const schema = buildSchema(`
+        type Query {
+          identity(aString: String!): String!
+        }
+      `);
+
+      expect(
+        print(
+          'query Details($aString: String!) { identity(aString: $string) }',
+          schema,
+        ),
+      ).toContain(stripIndent`
+        export namespace DetailsQueryData {
+          export interface Variables {
+            aString: string;
+          }
+        }
+      `);
+    });
+
+    it('outputs out a variable declaration with nullable members', () => {
+      const schema = buildSchema(`
+        type Query {
+          identity(aString: String): String
+        }
+      `);
+
+      expect(
+        print(
+          'query Details($aString: String) { identity(aString: $string) }',
+          schema,
+        ),
+      ).toContain(stripIndent`
+        export namespace DetailsQueryData {
+          export interface Variables {
+            aString?: string | null;
+          }
+        }
+      `);
+    });
+
+    it('outputs out a variable declaration with list members', () => {
+      const schema = buildSchema(`
+        type Query {
+          concat(strings: [String]!): String!
+        }
+      `);
+
+      expect(
+        print(
+          'query Details($strings: [String]!) { concat(strings: $strings) }',
+          schema,
+        ),
+      ).toContain(stripIndent`
+        export namespace DetailsQueryData {
+          export interface Variables {
+            strings: (string | null)[];
+          }
+        }
+      `);
+    });
+
+    it('outputs out a variable declaration with imported types', () => {
+      const filename = path.resolve('DetailsQuery.graphql');
+      const schemaTypesPath = path.resolve('Schema.ts');
+      const schema = buildSchema(`
+        input CreateInput {
+          name: String!
+        }
+
+        enum Occupation {
+          PROGRAMMER
+          OTHER
+        }
+
+        scalar Date
+
+        type Query {
+          name(create: CreateInput, occupation: Occupation, date: Date): String
+        }
+      `);
+
+      const printed = print(
+        'query Details($create: CreateInput, $occupation: Occupation!, $date: Date) { name(aString: $string) }',
+        schema,
+      );
+
+      expect(printed).toContain(stripIndent`
+        export namespace DetailsQueryData {
+          export interface Variables {
+            create?: CreateInput | null;
+            occupation: Occupation;
+            date?: Date | null;
+          }
+        }
+      `);
+
+      expect(printed).toContain(
+        `import { CreateInput, Occupation, Date } from "${expectedImportPath(
+          filename,
+          schemaTypesPath,
+        )}";`,
+      );
+    });
+  });
+
   describe('directives', () => {
     it('makes a non-null field optional when it has the include directive', () => {
       const schema = buildSchema(`
