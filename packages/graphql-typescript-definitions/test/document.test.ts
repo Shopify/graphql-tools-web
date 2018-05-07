@@ -3,7 +3,7 @@ import {buildSchema, parse, GraphQLSchema, Source, concatAST} from 'graphql';
 import {stripIndent} from 'common-tags';
 import {compile} from 'graphql-tool-utilities/ast';
 
-import {printFile, Options} from '../src/print2';
+import {printDocument, Options} from '../src/print/document';
 
 describe('printFile()', () => {
   describe('scalars', () => {
@@ -1442,5 +1442,5 @@ function print(
       .map((key) => ast.fragments[key])
       .filter((fragment) => fragment.filePath === filename),
   };
-  return printFile(file, ast, finalOptions);
+  return printDocument(file, ast, finalOptions);
 }

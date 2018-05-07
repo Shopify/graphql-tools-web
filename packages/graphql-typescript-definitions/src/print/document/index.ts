@@ -53,7 +53,11 @@ const scalarTypeMap = {
   [GraphQLID.name]: t.tsStringKeyword(),
 };
 
-export function printFile({operation, path}: File, ast: AST, options: Options) {
+export function printDocument(
+  {operation, path}: File,
+  ast: AST,
+  options: Options,
+) {
   if (operation == null) {
     return '';
   }

@@ -12,7 +12,7 @@ import {watch} from 'chokidar';
 import * as glob from 'glob';
 import {compile, Operation, Fragment, AST} from 'graphql-tool-utilities/ast';
 
-import {printFile} from './print2';
+import {printDocument} from './print';
 
 export interface Options {
   graphQLFiles: string;
@@ -152,7 +152,7 @@ export class Builder extends EventEmitter {
           const file = fileMap[key];
           let definition: string;
           try {
-            definition = printFile(file, ast, this.options);
+            definition = printDocument(file, ast, this.options);
           } catch ({message}) {
             const error = new Error(
               `Error in ${
