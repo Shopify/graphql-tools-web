@@ -439,7 +439,7 @@ describe('printFile()', () => {
     });
   });
 
-  describe.only('variables', () => {
+  describe('variables', () => {
     it('does not output variables if the query does not accept them', () => {
       const schema = buildSchema(`
         type Query {

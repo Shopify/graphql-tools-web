@@ -15,6 +15,11 @@ const {
 
 export interface Variable {
   name: string;
+  type?: GraphQLInputType;
+}
+
+export interface TypedVariable {
+  name: string;
   type: GraphQLInputType;
 }
 

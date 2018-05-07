@@ -23,9 +23,9 @@ import {
   Fragment,
   AST,
   Field,
+  TypedVariable,
   Variable,
 } from 'graphql-tool-utilities/ast';
-import {nullLiteral} from '@babel/types';
 
 export interface File {
   path: string;
@@ -340,13 +340,21 @@ function variablesInterface(variables: Variable[], context: OperationContext) {
     null,
     null,
     t.tsInterfaceBody(
-      variables.map((variable) => tsPropertyForVariable(variable, context)),
+      variables
+        .filter(isTypedVariable)
+        .map((variable) => tsPropertyForVariable(variable, context)),
     ),
   );
 }
 
+function isTypedVariable(
+  variable: Variable | TypedVariable,
+): variable is TypedVariable {
+  return variable.type != null;
+}
+
 function tsPropertyForVariable(
-  {name, type}: Variable,
+  {name, type}: TypedVariable,
   context: OperationContext,
 ) {
   const property = t.tsPropertySignature(
