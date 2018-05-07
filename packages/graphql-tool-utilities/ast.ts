@@ -29,23 +29,23 @@ export interface Condition {
   inverted: boolean;
 }
 
-export interface Field {
-  responseName: string;
-  fieldName: string;
-  type: GraphQLOutputType;
-  isConditional: boolean;
-  conditions?: Condition[];
+export interface PrintableFieldDetails {
   fields?: Field[];
   fragmentSpreads?: string[];
   inlineFragments?: InlineFragment[];
 }
 
-export interface InlineFragment {
+export interface Field extends PrintableFieldDetails {
+  responseName: string;
+  fieldName: string;
+  type: GraphQLOutputType;
+  isConditional: boolean;
+  conditions?: Condition[];
+}
+
+export interface InlineFragment extends PrintableFieldDetails {
   typeCondition: GraphQLObjectType | GraphQLInterfaceType;
   possibleTypes: (GraphQLObjectType | GraphQLInterfaceType)[];
-  fields: Field[];
-  fragmentSpreads: string[];
-  inlineFragments?: InlineFragment[];
 }
 
 export interface Fragment extends InlineFragment {

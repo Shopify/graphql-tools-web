@@ -272,16 +272,16 @@ describe('printFile()', () => {
         ),
       ).toContain(stripIndent`
         export namespace DetailsQueryData {
-          export interface SelfPerson {
+          export interface Self {
             name: string;
           }
-          export interface PartnerPerson {
+          export interface Partner {
             age: number;
           }
         }
         export interface DetailsQueryData {
-          self: SelfPerson;
-          partner?: PartnerPerson | null;
+          self: DetailsQueryData.Self;
+          partner?: DetailsQueryData.Partner | null;
         }
       `);
     });
@@ -309,15 +309,15 @@ describe('printFile()', () => {
         ),
       ).toContain(stripIndent`
         export namespace DetailsQueryData {
-          export interface SelfPartnerPerson {
+          export interface SelfPartner {
             name: string;
           }
-          export interface SelfPerson {
-            partner?: SelfPartnerPerson | null;
+          export interface Self {
+            partner?: DetailsQueryData.SelfPartner | null;
           }
         }
         export interface DetailsQueryData {
-          self: SelfPerson;
+          self: DetailsQueryData.Self;
         }
       `);
     });
@@ -348,19 +348,19 @@ describe('printFile()', () => {
         ),
       ).toContain(stripIndent`
         export namespace DetailsQueryData {
-          export interface SelfPartnerPerson {
+          export interface SelfPartner {
             nom: string;
           }
-          export interface SelfWifePerson {
+          export interface SelfWife {
             name: string;
           }
-          export interface SelfPerson {
-            partner?: SelfPartnerPerson | null;
-            wife?: SelfWifePerson | null;
+          export interface Self {
+            partner?: DetailsQueryData.SelfPartner | null;
+            wife?: DetailsQueryData.SelfWife | null;
           }
         }
         export interface DetailsQueryData {
-          self: SelfPerson;
+          self: DetailsQueryData.Self;
         }
       `);
     });
@@ -391,13 +391,13 @@ describe('printFile()', () => {
           }),
         ).toContain(stripIndent`
           export namespace DetailsQueryData {
-            export interface SelfPerson {
+            export interface Self {
               __typename: "Person";
               name: string;
             }
           }
           export interface DetailsQueryData {
-            self: SelfPerson;
+            self: DetailsQueryData.Self;
           }
         `);
       });
@@ -409,12 +409,12 @@ describe('printFile()', () => {
           }),
         ).toContain(stripIndent`
           export namespace DetailsQueryData {
-            export interface SelfPerson {
+            export interface Self {
               __typename: "Person";
             }
           }
           export interface DetailsQueryData {
-            self: SelfPerson;
+            self: DetailsQueryData.Self;
           }
         `);
       });
@@ -426,13 +426,630 @@ describe('printFile()', () => {
           }),
         ).toContain(stripIndent`
           export namespace DetailsQueryData {
-            export interface SelfPerson {
+            export interface Self {
               __typename: "Person";
               type: "Person";
             }
           }
           export interface DetailsQueryData {
-            self: SelfPerson;
+            self: DetailsQueryData.Self;
+          }
+        `);
+      });
+    });
+
+    describe('interfaces', () => {
+      function createBasicInterfaceSchema() {
+        return buildSchema(`
+          interface Named {
+            name: String!
+          }
+
+          type Person implements Named {
+            name: String!
+            occupation: String
+          }
+
+          type Dog implements Named {
+            name: String!
+            legs: Int!
+          }
+
+          type Cat implements Named {
+            name: String!
+            livesLeft: Int!
+          }
+
+          type Query {
+            named: Named
+          }
+        `);
+      }
+
+      it('collapses the type when an inline fragment is guaranteed', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print('query Details { named { ...on Named { name } } }', schema),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface Named {
+              name: string;
+            }
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.Named | null;
+          }
+        `);
+      });
+
+      it('splits out a catch-all type for interfaces where not all possible types are queried', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            'query Details { named { ...on Person { occupation } } }',
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              occupation?: string | null;
+            }
+            export interface NamedOther {}
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('adds guaranteed fields to each union type field', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                name
+                ...on Person { occupation }
+                ...on Dog { legs }
+              }
+            }`,
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              name: string;
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              name: string;
+              legs: number;
+            }
+            export interface NamedOther {
+              name: string;
+            }
+          }
+        `);
+      });
+
+      it('adds explicit typename to each union type', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                __typename
+                ...on Person { occupation }
+                ...on Dog { legs }
+                ...on Cat { livesLeft }
+              }
+            }`,
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              __typename: "Dog";
+              legs: number;
+            }
+            export interface NamedCat {
+              __typename: "Cat";
+              livesLeft: number;
+            }
+          }
+        `);
+      });
+
+      it('adds implicit typename to each union type when the option is set', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { occupation }
+                ...on Dog { legs }
+                ...on Cat { livesLeft }
+              }
+            }`,
+            schema,
+            {printOptions: {addTypename: true}},
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              __typename: "Dog";
+              legs: number;
+            }
+            export interface NamedCat {
+              __typename: "Cat";
+              livesLeft: number;
+            }
+          }
+        `);
+      });
+
+      it('splits other typename into the catch-all union type', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { occupation }
+              }
+            }`,
+            schema,
+            {printOptions: {addTypename: true}},
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              occupation?: string | null;
+            }
+            export interface NamedOther {
+              __typename: "Dog" | "Cat";
+            }
+          }
+        `);
+      });
+
+      it('collapses a type when a fragment spread is guaranteed', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...NamedFragment
+              }
+            }
+
+            fragment NamedFragment on Named {
+              name
+            }`,
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface Named {
+              name: string;
+            }
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.Named | null;
+          }
+        `);
+      });
+
+      it('separates out the type for a non-guaranteed fragment spread', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { ...PersonFragment }
+              }
+            }
+
+            fragment PersonFragment on Person {
+              occupation
+            }`,
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              occupation?: string | null;
+            }
+            export interface NamedOther {}
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('resolves types from external fragments', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { ...PersonFragment }
+              }
+            }`,
+            schema,
+            {
+              fragments: {
+                'PersonFragment.graphql': `
+                  fragment PersonFragment on Person {
+                    occupation
+                  }
+                `,
+              },
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              occupation?: string | null;
+            }
+            export interface NamedOther {}
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('resolves fragment spreads that contain inline fragments', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...NamedFragment
+              }
+            }`,
+            schema,
+            {
+              printOptions: {addTypename: true},
+              fragments: {
+                'NamedFragment.graphql': `
+                  fragment NamedFragment on Named {
+                    name
+                    ...on Person { occupation }
+                    ...on Dog { legs }
+                  }
+                `,
+              },
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              name: string;
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              __typename: "Dog";
+              name: string;
+              legs: number;
+            }
+            export interface NamedOther {
+              __typename: "Cat";
+              name: string;
+            }
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedDog | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+    });
+
+    describe('unions', () => {
+      function createBasicUnionSchema() {
+        return buildSchema(`
+          type Person implements Named {
+            name: String!
+            occupation: String
+            pets: [Pet!]!
+          }
+
+          type Dog implements Named {
+            name: String!
+            legs: Int!
+          }
+
+          type Cat implements Named {
+            name: String!
+            livesLeft: Int!
+          }
+
+          union Named = Person | Dog | Cat
+          union Pet = Dog | Cat
+
+          type Query {
+            named: Named
+          }
+        `);
+      }
+
+      it('splits out a catch-all type for interfaces where not all possible types are queried', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            'query Details { named { ...on Person { occupation } } }',
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              occupation?: string | null;
+            }
+            export interface NamedOther {}
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('adds explicit typename to each union type', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                __typename
+                ...on Person { occupation }
+                ...on Dog { legs }
+                ...on Cat { livesLeft }
+              }
+            }`,
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              __typename: "Dog";
+              legs: number;
+            }
+            export interface NamedCat {
+              __typename: "Cat";
+              livesLeft: number;
+            }
+          }
+        `);
+      });
+
+      it('adds implicit typename to each union type when the option is set', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { occupation }
+                ...on Dog { legs }
+                ...on Cat { livesLeft }
+              }
+            }`,
+            schema,
+            {printOptions: {addTypename: true}},
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              __typename: "Dog";
+              legs: number;
+            }
+            export interface NamedCat {
+              __typename: "Cat";
+              livesLeft: number;
+            }
+          }
+        `);
+      });
+
+      it('splits other typename into the catch-all union type', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { occupation }
+              }
+            }`,
+            schema,
+            {printOptions: {addTypename: true}},
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              occupation?: string | null;
+            }
+            export interface NamedOther {
+              __typename: "Dog" | "Cat";
+            }
+          }
+        `);
+      });
+
+      it('separates out the type for a fragment spread', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { ...PersonFragment }
+              }
+            }
+
+            fragment PersonFragment on Person {
+              occupation
+            }`,
+            schema,
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              occupation?: string | null;
+            }
+            export interface NamedOther {}
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('resolves types from external fragments', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person { ...PersonFragment }
+              }
+            }`,
+            schema,
+            {
+              fragments: {
+                'PersonFragment.graphql': `
+                  fragment PersonFragment on Person {
+                    occupation
+                  }
+                `,
+              },
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              occupation?: string | null;
+            }
+            export interface NamedOther {}
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('resolves fragment spreads that contain inline fragments', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...NamedFragment
+              }
+            }`,
+            schema,
+            {
+              printOptions: {addTypename: true},
+              fragments: {
+                'NamedFragment.graphql': `
+                  fragment NamedFragment on Named {
+                    ...on Person { name, occupation }
+                    ...on Dog { legs }
+                  }
+                `,
+              },
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPerson {
+              __typename: "Person";
+              name: string;
+              occupation?: string | null;
+            }
+            export interface NamedDog {
+              __typename: "Dog";
+              legs: number;
+            }
+            export interface NamedOther {
+              __typename: "Cat";
+            }
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedDog | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('resolves union types nested within other union types', () => {
+        const schema = createBasicUnionSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ...on Person {
+                  pets {
+                    ...on Dog { legs }
+                  }
+                }
+              }
+            }`,
+            schema,
+            {printOptions: {addTypename: true}},
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedPetsDog {
+              __typename: "Dog";
+              legs: number;
+            }
+            export interface NamedPetsOther {
+              __typename: "Cat";
+            }
+            export interface NamedPerson {
+              __typename: "Person";
+              pets: (DetailsQueryData.NamedPetsDog | DetailsQueryData.NamedPetsOther)[];
+            }
+            export interface NamedOther {
+              __typename: "Dog" | "Cat";
+            }
+          }
+          export interface DetailsQueryData {
+            named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedOther | null;
           }
         `);
       });
@@ -557,6 +1174,23 @@ describe('printFile()', () => {
         )}";`,
       );
     });
+
+    it('uses the variables as the second type argument to DocumentNode', () => {
+      const schema = buildSchema(`
+        type Query {
+          identity(aString: String!): String!
+        }
+      `);
+
+      expect(
+        print(
+          'query Details($aString: String!) { identity(aString: $string) }',
+          schema,
+        ),
+      ).toContain(stripIndent`
+        declare const document: DocumentNode<DetailsQueryData, DetailsQueryData.Variables>;
+      `);
+    });
   });
 
   describe('directives', () => {
@@ -636,7 +1270,7 @@ describe('printFile()', () => {
       `);
 
       expect(print('query Details { name }', schema)).toContain(stripIndent`
-        declare const document: DocumentNode<DetailsQueryData>;
+        declare const document: DocumentNode<DetailsQueryData, never>;
         export default document;
       `);
     });
