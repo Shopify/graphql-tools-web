@@ -1375,6 +1375,199 @@ describe('printDocument()', () => {
     });
   });
 
+  describe('fragment', () => {
+    it('does not explicitly print a fragment when there is an operation', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+          age: Int!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      expect(
+        print(
+          `
+          query Details {
+            self { ...SelfDetails }
+          }
+          fragment SelfDetails on Person {
+            name
+          }
+          `,
+          schema,
+        ),
+      ).not.toContain('export interface SelfDetailsFragmentData');
+    });
+
+    it('prints a simple fragment', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+          age: Int!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      expect(
+        print(
+          `
+          fragment Details on Person {
+            name
+          }
+          `,
+          schema,
+        ),
+      ).toContain(stripIndent`
+        export interface DetailsFragmentData {
+          name: string;
+        }
+      `);
+    });
+
+    it('prints a complex fragment', () => {
+      const filename = path.resolve('DetailsQuery.graphql');
+      const schemaTypesPath = path.resolve('Schema.ts');
+      const schema = buildSchema(`
+        enum TechRole {
+          DESIGNER
+          DEVELOPER
+        }
+
+        type Person {
+          name: String!
+          age: Int!
+          role: TechRole
+          relatives: [Person!]!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      expect(
+        print(
+          `
+          fragment Details on Person {
+            role
+            relatives {
+              name
+              role
+            }
+          }
+          `,
+          schema,
+          {filename, printOptions: {schemaTypesPath}},
+        ),
+      ).toContain(stripIndent`
+        import { TechRole } from "${expectedImportPath(
+          filename,
+          schemaTypesPath,
+        )}";
+        export namespace DetailsFragmentData {
+          export interface Relatives {
+            name: string;
+            role?: TechRole | null;
+          }
+        }
+        export interface DetailsFragmentData {
+          role?: TechRole | null;
+          relatives: DetailsFragmentData.Relatives[];
+        }
+      `);
+    });
+
+    it('prints multiple fragments', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+          age: Int!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      const printed = print(
+        `
+        fragment Name on Person {
+          name
+        }
+        fragment Age on Person {
+          age
+        }
+        `,
+        schema,
+      );
+
+      expect(printed).toContain(stripIndent`
+        export interface NameFragmentData {
+          name: string;
+        }
+      `);
+
+      expect(printed).toContain(stripIndent`
+        export interface AgeFragmentData {
+          age: number;
+        }
+      `);
+    });
+
+    it('consolidates imports across multiple fragments', () => {
+      const filename = path.resolve('DetailsQuery.graphql');
+      const schemaTypesPath = path.resolve('Schema.ts');
+      const schema = buildSchema(`
+        enum Phone {
+          IOS
+          ANDROID
+        }
+
+        type Person {
+          name: String!
+          age: Int!
+          phone: Phone
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      const printed = print(
+        `
+        fragment Name on Person {
+          name
+          phone
+        }
+        fragment Age on Person {
+          age
+          phone
+        }
+        `,
+        schema,
+        {filename, printOptions: {schemaTypesPath}},
+      );
+
+      const importMatcher = new RegExp(
+        stripIndent`import { Phone } from "${expectedImportPath(
+          filename,
+          schemaTypesPath,
+        )}";`,
+        'g',
+      );
+
+      expect(printed.match(importMatcher)).toHaveLength(1);
+    });
+  });
+
   describe('document', () => {
     it('imports DocumentNode from graphql-typed', () => {
       const schema = buildSchema(`

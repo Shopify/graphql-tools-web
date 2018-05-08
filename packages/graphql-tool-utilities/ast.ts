@@ -80,4 +80,10 @@ export interface Compile {
   (schema: GraphQLSchema, document: DocumentNode): AST;
 }
 
+export function isOperation(
+  operationOrFragment: Operation | Fragment,
+): operationOrFragment is Operation {
+  return (operationOrFragment as any).hasOwnProperty('operationName');
+}
+
 export const compile: Compile = compileToIR;

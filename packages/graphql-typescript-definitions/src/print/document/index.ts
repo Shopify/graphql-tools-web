@@ -26,6 +26,7 @@ import {
   Variable,
   InlineFragment,
   PrintableFieldDetails,
+  isOperation,
 } from 'graphql-tool-utilities/ast';
 
 import {scalarTypeMap} from '../utilities';
@@ -44,17 +45,49 @@ export interface Options {
 }
 
 export function printDocument(
-  {operation, path}: File,
+  {path, operation, fragments}: File,
   ast: AST,
   options: Options,
 ) {
+  const file = new FileContext(path, options);
+
   if (operation == null) {
-    return '';
+    const fileBody = fragments.reduce<t.Statement[]>((statements, fragment) => {
+      const context = new OperationContext(fragment, ast, options, file);
+      const body = tsInterfaceBodyForObjectField(
+        fragment,
+        fragment.typeCondition,
+        new ObjectStack(fragment.typeCondition, []),
+        context,
+      );
+
+      const {namespace} = context;
+
+      return [
+        ...statements,
+        ...(namespace ? [t.exportNamedDeclaration(namespace, [])] : []),
+        t.exportNamedDeclaration(
+          t.tsInterfaceDeclaration(
+            t.identifier(context.typeName),
+            null,
+            null,
+            body,
+          ),
+          [],
+        ),
+      ];
+    }, []);
+
+    const {schemaImports} = file;
+
+    if (schemaImports) {
+      fileBody.unshift(schemaImports);
+    }
+
+    return generate(t.file(t.program(fileBody), [], [])).code;
   }
 
-  const {schemaTypesPath} = options;
-
-  const context = new OperationContext(operation, ast, options);
+  const context = new OperationContext(operation, ast, options, file);
 
   let rootType: GraphQLObjectType;
 
@@ -83,27 +116,8 @@ export function printDocument(
     ),
   );
 
-  const {imported, exported} = context;
-
-  const namespace =
-    exported.length > 0
-      ? t.tsModuleDeclaration(
-          t.identifier(context.typeName),
-          t.tsModuleBlock(
-            exported.map((type) => t.exportNamedDeclaration(type, [])),
-          ),
-        )
-      : null;
-
-  const importFromSchema =
-    imported.length > 0
-      ? t.importDeclaration(
-          imported.map((type) =>
-            t.importSpecifier(t.identifier(type), t.identifier(type)),
-          ),
-          t.stringLiteral(importPath(path, schemaTypesPath)),
-        )
-      : null;
+  const {schemaImports} = file;
+  const {namespace} = context;
 
   const documentNodeImport = t.importDeclaration(
     [
@@ -138,8 +152,8 @@ export function printDocument(
 
   const fileBody: t.Statement[] = [documentNodeImport];
 
-  if (importFromSchema) {
-    fileBody.push(importFromSchema);
+  if (schemaImports) {
+    fileBody.push(schemaImports);
   }
 
   if (namespace) {
@@ -152,9 +166,7 @@ export function printDocument(
     documentNodeExport,
   );
 
-  const file = t.file(t.program(fileBody), [], []);
-
-  return generate(file).code;
+  return generate(t.file(t.program(fileBody), [], [])).code;
 }
 
 function tsInterfaceBodyForObjectField(
@@ -330,11 +342,11 @@ function tsTypeForGraphQLType(
     if (scalarTypeMap.hasOwnProperty(unwrappedGraphQLType.name)) {
       type = scalarTypeMap[unwrappedGraphQLType.name];
     } else {
-      context.import(unwrappedGraphQLType.name);
+      context.file.import(unwrappedGraphQLType.name);
       type = t.tsTypeReference(t.identifier(unwrappedGraphQLType.name));
     }
   } else if (isEnumType(unwrappedGraphQLType)) {
-    context.import(unwrappedGraphQLType.name);
+    context.file.import(unwrappedGraphQLType.name);
     type = t.tsTypeReference(t.identifier(unwrappedGraphQLType.name));
   } else if (isListType(unwrappedGraphQLType)) {
     const {ofType} = unwrappedGraphQLType;
@@ -370,27 +382,68 @@ function importPath(from: string, to: string) {
 
 type NamespaceExportableType = t.TSInterfaceDeclaration;
 
+class FileContext {
+  get schemaImports() {
+    const {
+      path,
+      importedTypes,
+      options: {schemaTypesPath},
+    } = this;
+
+    return importedTypes.size > 0
+      ? t.importDeclaration(
+          [...importedTypes].map((type) =>
+            t.importSpecifier(t.identifier(type), t.identifier(type)),
+          ),
+          t.stringLiteral(importPath(path, schemaTypesPath)),
+        )
+      : null;
+  }
+
+  private importedTypes = new Set<string>();
+
+  constructor(private path: string, private options: Options) {}
+
+  import(type: string) {
+    this.importedTypes.add(type);
+  }
+}
+
 class OperationContext {
   get typeName() {
-    const {operationName, operationType} = this.operation;
-    return `${ucFirst(operationName)}${ucFirst(operationType)}Data`;
+    if (isOperation(this.operation)) {
+      const {operationName, operationType} = this.operation;
+      return `${ucFirst(operationName)}${ucFirst(operationType)}Data`;
+    } else {
+      const {fragmentName} = this.operation;
+      return `${ucFirst(fragmentName)}FragmentData`;
+    }
+  }
+
+  get namespace() {
+    const {exported, typeName} = this;
+
+    return exported.length > 0
+      ? t.tsModuleDeclaration(
+          t.identifier(typeName),
+          t.tsModuleBlock(
+            exported.map((type) => t.exportNamedDeclaration(type, [])),
+          ),
+        )
+      : null;
   }
 
   get exported() {
     return this.exportedTypes;
   }
 
-  get imported() {
-    return [...this.importedTypes];
-  }
-
   private exportedTypes: NamespaceExportableType[] = [];
-  private importedTypes = new Set<string>();
 
   constructor(
-    public operation: Operation,
+    public operation: Operation | Fragment,
     public ast: AST,
     public options: Options,
+    public file: FileContext,
   ) {}
 
   export(type: NamespaceExportableType) {
@@ -402,10 +455,6 @@ class OperationContext {
         t.identifier(type.id.name),
       ),
     );
-  }
-
-  import(type: string) {
-    this.importedTypes.add(type);
   }
 }
 
@@ -486,14 +535,14 @@ function tsTypeForGraphQLInputType(
     if (scalarTypeMap.hasOwnProperty(unwrappedGraphQLType.name)) {
       type = scalarTypeMap[unwrappedGraphQLType.name];
     } else {
-      context.import(unwrappedGraphQLType.name);
+      context.file.import(unwrappedGraphQLType.name);
       type = t.tsTypeReference(t.identifier(unwrappedGraphQLType.name));
     }
   } else if (
     isEnumType(unwrappedGraphQLType) ||
     isInputObjectType(unwrappedGraphQLType)
   ) {
-    context.import(unwrappedGraphQLType.name);
+    context.file.import(unwrappedGraphQLType.name);
     type = t.tsTypeReference(t.identifier(unwrappedGraphQLType.name));
   } else {
     const {ofType} = unwrappedGraphQLType;
