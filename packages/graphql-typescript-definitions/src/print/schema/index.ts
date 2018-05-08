@@ -40,9 +40,9 @@ function tsTypeForRootInputType(type: InputType) {
   if (isEnumType(type)) {
     return tsEnumForType(type);
   } else if (isScalarType(type)) {
-    return tsScalarType(type);
+    return tsScalarForType(type);
   } else {
-    return tsInputObjectType(type);
+    return tsInputObjectForType(type);
   }
 }
 
@@ -71,7 +71,7 @@ function tsTypeForInputType(type: GraphQLInputType): t.TSType {
     : t.tsUnionType([tsType, t.tsNullKeyword()]);
 }
 
-function tsInputObjectType(type: GraphQLInputObjectType) {
+function tsInputObjectForType(type: GraphQLInputObjectType) {
   const fields = Object.entries(type.getFields()).map(([name, field]) => {
     const property = t.tsPropertySignature(
       t.identifier(name),
@@ -89,7 +89,7 @@ function tsInputObjectType(type: GraphQLInputObjectType) {
   );
 }
 
-function tsScalarType(type: GraphQLScalarType) {
+function tsScalarForType(type: GraphQLScalarType) {
   return t.tsTypeAliasDeclaration(
     t.identifier(type.name),
     null,
