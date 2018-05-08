@@ -5,7 +5,7 @@ import {compile} from 'graphql-tool-utilities/ast';
 
 import {printDocument, Options} from '../src/print/document';
 
-describe('printFile()', () => {
+describe('printDocument()', () => {
   describe('scalars', () => {
     it('prints a string type', () => {
       const schema = buildSchema(`
@@ -1405,7 +1405,8 @@ describe('printFile()', () => {
 
 function expectedImportPath(from: string, to: string) {
   const relative = path.relative(path.dirname(from), to);
-  return relative.startsWith('..') ? relative : `./${relative}`;
+  const normalizedPath = relative.startsWith('..') ? relative : `./${relative}`;
+  return normalizedPath.replace(/\.ts$/, '');
 }
 
 interface TestOptions {

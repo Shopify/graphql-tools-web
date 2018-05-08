@@ -48,6 +48,14 @@ builder.on('start', () => {
   console.log();
 });
 
+builder.on('schema:start', () => {
+  console.log();
+});
+
+builder.on('schema:end', () => {
+  console.log(`${BUILT} ${argv.schemaTypesPath}`);
+});
+
 builder.on('build', ({documentPath, definitionPath}) => {
   console.log(`${BUILT} ${chalk.dim(documentPath)} → ${definitionPath}`);
 });

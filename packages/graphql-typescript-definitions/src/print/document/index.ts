@@ -3,10 +3,6 @@ import {relative, dirname} from 'path';
 import {ucFirst} from 'change-case';
 import {
   GraphQLString,
-  GraphQLInt,
-  GraphQLFloat,
-  GraphQLBoolean,
-  GraphQLID,
   GraphQLInputType,
   isEnumType,
   isObjectType,
@@ -32,6 +28,8 @@ import {
   PrintableFieldDetails,
 } from 'graphql-tool-utilities/ast';
 
+import {scalarTypeMap} from '../utilities';
+
 const generate = require('@babel/generator').default;
 
 export interface File {
@@ -44,14 +42,6 @@ export interface Options {
   schemaTypesPath: string;
   addTypename?: boolean;
 }
-
-const scalarTypeMap = {
-  [GraphQLString.name]: t.tsStringKeyword(),
-  [GraphQLInt.name]: t.tsNumberKeyword(),
-  [GraphQLFloat.name]: t.tsNumberKeyword(),
-  [GraphQLBoolean.name]: t.tsBooleanKeyword(),
-  [GraphQLID.name]: t.tsStringKeyword(),
-};
 
 export function printDocument(
   {operation, path}: File,
@@ -372,7 +362,10 @@ function tsTypeForGraphQLType(
 
 function importPath(from: string, to: string) {
   const relativePath = relative(dirname(from), to);
-  return relativePath.startsWith('..') ? relativePath : `./${relativePath}`;
+  const normalizedPath = relativePath.startsWith('..')
+    ? relativePath
+    : `./${relativePath}`;
+  return normalizedPath.replace(/\.ts$/, '');
 }
 
 type NamespaceExportableType = t.TSInterfaceDeclaration;
