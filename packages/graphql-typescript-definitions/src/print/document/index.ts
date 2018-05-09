@@ -10,6 +10,7 @@ import {
   isScalarType,
   isListType,
   GraphQLType,
+  GraphQLNonNull,
   isInputObjectType,
   isInterfaceType,
   isUnionType,
@@ -88,6 +89,12 @@ export function printDocument(
   }
 
   const context = new OperationContext(operation, ast, options, file);
+  const partialContext = new OperationContext(
+    operation,
+    ast,
+    {...options, partial: true},
+    file,
+  );
 
   let rootType: GraphQLObjectType;
 
@@ -116,8 +123,21 @@ export function printDocument(
     ),
   );
 
+  const operationPartialInterface = t.tsInterfaceDeclaration(
+    t.identifier(partialContext.typeName),
+    null,
+    null,
+    tsInterfaceBodyForObjectField(
+      operation,
+      rootType,
+      new ObjectStack(rootType, []),
+      partialContext,
+    ),
+  );
+
   const {schemaImports} = file;
   const {namespace} = context;
+  const {namespace: partialNamespace} = partialContext;
 
   const documentNodeImport = t.importDeclaration(
     [
@@ -136,6 +156,7 @@ export function printDocument(
       t.tsTypeParameterInstantiation([
         t.tsTypeReference(t.identifier(context.typeName)),
         variables || t.tsNeverKeyword(),
+        t.tsTypeReference(t.identifier(partialContext.typeName)),
       ]),
     ),
   );
@@ -156,6 +177,12 @@ export function printDocument(
     fileBody.push(schemaImports);
   }
 
+  if (partialNamespace) {
+    fileBody.push(t.exportNamedDeclaration(partialNamespace, []));
+  }
+
+  fileBody.push(t.exportNamedDeclaration(operationPartialInterface, []));
+
   if (namespace) {
     fileBody.push(t.exportNamedDeclaration(namespace, []));
   }
@@ -174,6 +201,7 @@ function tsInterfaceBodyForObjectField(
   graphQLType: GraphQLCompositeType | GraphQLCompositeType[],
   stack: ObjectStack,
   context: OperationContext,
+  requiresTypename = false,
 ) {
   const uniqueFields = fields.filter((field) => {
     if (stack.hasSeenField(field)) {
@@ -187,17 +215,24 @@ function tsInterfaceBodyForObjectField(
   const typenameField = {
     fieldName: '__typename',
     responseName: '__typename',
-    type: GraphQLString,
+    type: new GraphQLNonNull(GraphQLString),
     isConditional: false,
   };
 
   const typename =
-    context.options.addTypename && !stack.hasSeenField(typenameField)
-      ? tsPropertyForField(typenameField, graphQLType, stack, context)
+    (context.options.addTypename || requiresTypename) &&
+    !stack.hasSeenField(typenameField)
+      ? tsPropertyForField(
+          typenameField,
+          graphQLType,
+          stack,
+          context,
+          requiresTypename,
+        )
       : null;
 
   const body = uniqueFields.map((field) =>
-    tsPropertyForField(field, graphQLType, stack, context),
+    tsPropertyForField(field, graphQLType, stack, context, requiresTypename),
   );
 
   return t.tsInterfaceBody(typename ? [typename, ...body] : body);
@@ -208,6 +243,7 @@ function tsTypeForInlineFragment(
   _graphQLType: GraphQLCompositeType,
   stack: ObjectStack,
   context: OperationContext,
+  requiresTypename = false,
 ) {
   const {typeCondition} = inlineFragment;
   const interfaceDeclaration = t.tsInterfaceDeclaration(
@@ -219,6 +255,7 @@ function tsTypeForInlineFragment(
       typeCondition,
       stack,
       context,
+      requiresTypename,
     ),
   );
 
@@ -240,6 +277,7 @@ function tsTypeForObjectField(
         graphQLType,
         stack.fragment(inlineFragment.typeCondition),
         context,
+        context.options.partial,
       ),
     );
 
@@ -270,6 +308,7 @@ function tsTypeForObjectField(
           missingPossibleTypes,
           stack,
           context,
+          context.options.partial,
         ),
       );
 
@@ -300,18 +339,27 @@ function tsPropertyForField(
   parentType: GraphQLCompositeType | GraphQLCompositeType[],
   stack: ObjectStack,
   context: OperationContext,
+  isRequiredTypename = false,
 ) {
   if (field.fieldName === '__typename' && parentType) {
+    const optional =
+      !isRequiredTypename &&
+      (context.options.partial ||
+        field.isConditional ||
+        !isNonNullType(field.type));
+
     const typename = Array.isArray(parentType)
       ? t.tsUnionType(parentType.map(tsTypenameForGraphQLType))
       : tsTypenameForGraphQLType(parentType);
 
     const typenameProperty = t.tsPropertySignature(
       t.identifier(field.responseName),
-      t.tsTypeAnnotation(typename),
+      optional
+        ? t.tsTypeAnnotation(t.tsUnionType([typename, t.tsNullKeyword()]))
+        : t.tsTypeAnnotation(typename),
     );
 
-    typenameProperty.optional = field.isConditional;
+    typenameProperty.optional = optional;
     return typenameProperty;
   }
 
@@ -320,7 +368,10 @@ function tsPropertyForField(
     t.tsTypeAnnotation(tsTypeForGraphQLType(field.type, field, stack, context)),
   );
 
-  property.optional = field.isConditional || !isNonNullType(field.type);
+  property.optional =
+    context.options.partial ||
+    field.isConditional ||
+    !isNonNullType(field.type);
 
   return property;
 }
@@ -332,7 +383,9 @@ function tsTypeForGraphQLType(
   context: OperationContext,
 ) {
   let type: t.TSType;
-  const forceNullable = field.isConditional && graphQLType === field.type;
+  const forceNullable =
+    context.options.partial ||
+    (field.isConditional && graphQLType === field.type);
   const isNonNull = !forceNullable && isNonNullType(graphQLType);
   const unwrappedGraphQLType: GraphQLType = isNonNullType(graphQLType)
     ? graphQLType.ofType
@@ -409,15 +462,25 @@ class FileContext {
   }
 }
 
+interface ContextOptions extends Options {
+  partial?: boolean;
+}
+
 class OperationContext {
   get typeName() {
+    let typeName: string;
+
     if (isOperation(this.operation)) {
       const {operationName, operationType} = this.operation;
-      return `${ucFirst(operationName)}${ucFirst(operationType)}Data`;
+      typeName = `${ucFirst(operationName)}${ucFirst(operationType)}Data`;
     } else {
       const {fragmentName} = this.operation;
-      return `${ucFirst(fragmentName)}FragmentData`;
+      typeName = `${ucFirst(fragmentName)}FragmentData`;
     }
+
+    return this.options.partial
+      ? typeName.replace(/Data$/, 'PartialData')
+      : typeName;
   }
 
   get namespace() {
@@ -442,7 +505,7 @@ class OperationContext {
   constructor(
     public operation: Operation | Fragment,
     public ast: AST,
-    public options: Options,
+    public options: ContextOptions,
     public file: FileContext,
   ) {}
 

@@ -1194,7 +1194,7 @@ describe('printDocument()', () => {
           schema,
         ),
       ).toContain(stripIndent`
-        declare const document: DocumentNode<DetailsQueryData, DetailsQueryData.Variables>;
+        declare const document: DocumentNode<DetailsQueryData, DetailsQueryData.Variables, DetailsQueryPartialData>;
       `);
     });
   });
@@ -1589,8 +1589,188 @@ describe('printDocument()', () => {
       `);
 
       expect(print('query Details { name }', schema)).toContain(stripIndent`
-        declare const document: DocumentNode<DetailsQueryData, never>;
+        declare const document: DocumentNode<DetailsQueryData, never, DetailsQueryPartialData>;
         export default document;
+      `);
+    });
+  });
+
+  describe('deep partial', () => {
+    it('creates a deep partial version of root fields', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+          age: Int!
+        }
+      `);
+
+      expect(print('query Details { name, age }', schema))
+        .toContain(stripIndent`
+          export interface DetailsQueryPartialData {
+            name?: string | null;
+            age?: number | null;
+          }
+        `);
+    });
+
+    it('creates a deep partial version of nested object fields', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      expect(print('query Details { self { name } }', schema))
+        .toContain(stripIndent`
+          export namespace DetailsQueryPartialData {
+            export interface Self {
+              name?: string | null;
+            }
+          }
+          export interface DetailsQueryPartialData {
+            self?: DetailsQueryPartialData.Self | null;
+          }
+        `);
+    });
+
+    it('creates an optional version of the __typename field when the option is truthy', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+        }
+
+        type Query {
+          self: Person!
+        }
+      `);
+
+      expect(
+        print('query Details { self { name } }', schema, {
+          printOptions: {addTypename: true},
+        }),
+      ).toContain(stripIndent`
+        export namespace DetailsQueryPartialData {
+          export interface Self {
+            __typename?: "Person" | null;
+            name?: string | null;
+          }
+        }
+        export interface DetailsQueryPartialData {
+          __typename?: "Query" | null;
+          self?: DetailsQueryPartialData.Self | null;
+        }
+      `);
+    });
+
+    it('makes typename mandatory for union types', () => {
+      const schema = buildSchema(`
+        type Person {
+          name: String!
+        }
+
+        type Dog {
+          legs: Int!
+        }
+
+        type Cat {
+          lives: Int!
+        }
+
+        union Entity = Person | Dog | Cat
+
+        type Query {
+          entity: Entity
+        }
+      `);
+
+      expect(
+        print(
+          `
+          query Details {
+            entity {
+              ...on Person {
+                name
+              }
+            }
+          }
+          `,
+          schema,
+        ),
+      ).toContain(stripIndent`
+        export namespace DetailsQueryPartialData {
+          export interface EntityPerson {
+            __typename: "Person";
+            name?: string | null;
+          }
+          export interface EntityOther {
+            __typename: "Dog" | "Cat";
+          }
+        }
+        export interface DetailsQueryPartialData {
+          entity?: DetailsQueryPartialData.EntityPerson | DetailsQueryPartialData.EntityOther | null;
+        }
+      `);
+    });
+
+    it('makes typename mandatory for interface types', () => {
+      const schema = buildSchema(`
+        interface Named {
+          name: String!
+        }
+
+        type Person implements Named {
+          name: String!
+          occupation: String
+        }
+
+        type Dog implements Named {
+          name: String!
+          legs: Int!
+        }
+
+        type Cat implements Named {
+          name: String!
+          livesLeft: Int!
+        }
+
+        type Query {
+          named: Named!
+        }
+      `);
+
+      expect(
+        print(
+          `
+          query Details {
+            named {
+              name
+              ...on Person {
+                occupation
+              }
+            }
+          }
+          `,
+          schema,
+        ),
+      ).toContain(stripIndent`
+        export namespace DetailsQueryPartialData {
+          export interface NamedPerson {
+            __typename: "Person";
+            name?: string | null;
+            occupation?: string | null;
+          }
+          export interface NamedOther {
+            __typename: "Dog" | "Cat";
+            name?: string | null;
+          }
+        }
+        export interface DetailsQueryPartialData {
+          named?: DetailsQueryPartialData.NamedPerson | DetailsQueryPartialData.NamedOther | null;
+        }
       `);
     });
   });
