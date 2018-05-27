@@ -810,6 +810,76 @@ describe('printDocument()', () => {
         `);
       });
 
+      it('resolves fragment spreads on interface types with multiple implementers', () => {
+        const schema = buildSchema(`
+          interface Named {
+            name: String!
+          }
+
+          interface MultiLived {
+            livesLeft: Int!
+          }
+
+          type Person implements Named {
+            name: String!
+            occupation: String
+          }
+
+          type Dog implements Named {
+            name: String!
+            legs: Int!
+          }
+
+          type Cat implements Named & MultiLived {
+            name: String!
+            livesLeft: Int!
+          }
+
+          type Wizard implements Named & MultiLived {
+            name: String!
+            livesLeft: Int!
+          }
+
+          type Query {
+            named: Named
+          }
+        `);
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ... on MultiLived {
+                  livesLeft
+                }
+              }
+            }`,
+            schema,
+            {
+              printOptions: {addTypename: true},
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedCat {
+              __typename: "Cat";
+              livesLeft: number;
+            }
+            export interface NamedWizard {
+              __typename: "Wizard";
+              livesLeft: number;
+            }
+            export interface NamedOther {
+              __typename: "Person" | "Dog";
+            }
+          }
+          export interface DetailsQueryData {
+            __typename: "Query";
+            named?: DetailsQueryData.NamedCat | DetailsQueryData.NamedWizard | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
       it('merges spreads on interfaces and object types', () => {
         const schema = createBasicInterfaceSchema();
 
