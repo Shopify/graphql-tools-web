@@ -8,3 +8,4 @@ packages/graphql-typescript-definitions/test/fixtures/**/schema.json
 packages/graphql-typescript-definitions/test/fixtures/**/schema.ts
 packages/graphql-typescript-definitions/test/fixtures/**/*.d.ts
 /lerna-debug.log
+yarn-error.log

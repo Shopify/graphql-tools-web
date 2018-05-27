@@ -89,4 +89,10 @@ export function isOperation(
   return (operationOrFragment as any).hasOwnProperty('operationName');
 }
 
+export function isTypedVariable(
+  variable: Variable | TypedVariable,
+): variable is TypedVariable {
+  return variable.type != null;
+}
+
 export const compile: Compile = compileToIR;

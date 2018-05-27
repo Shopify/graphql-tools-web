@@ -5,6 +5,7 @@ import {
   ParseOptions,
 } from 'graphql';
 
+// @ts-ignore
 export interface DocumentNode<Data = {}, Variables = {}, DeepPartial = {}>
   extends BaseDocumentNode {}
 
