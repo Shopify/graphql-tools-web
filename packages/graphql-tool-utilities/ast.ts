@@ -38,7 +38,9 @@ export interface Condition {
 export interface PrintableFieldDetails {
   fields?: Field[];
   fragmentSpreads?: string[];
-  inlineFragments?: InlineFragment[];
+  inlineFragments?: InlineFragment[] & {
+    [key: string]: InlineFragment | undefined;
+  };
 }
 
 export interface Field extends PrintableFieldDetails {
@@ -65,6 +67,7 @@ export interface Operation extends PrintableFieldDetails {
   filePath: string;
   operationName: string;
   operationType: 'query' | 'mutation' | 'subscription';
+  rootType: GraphQLObjectType;
   variables: Variable[];
   fragmentsReferenced: string[];
 }

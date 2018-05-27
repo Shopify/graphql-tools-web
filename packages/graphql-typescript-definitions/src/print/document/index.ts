@@ -271,7 +271,7 @@ function tsTypeForObjectField(
   const {inlineFragments = []} = field;
 
   if (inlineFragments.length) {
-    const fragmentTypes = inlineFragments.map((inlineFragment) =>
+    const fragmentTypes = [...inlineFragments].map((inlineFragment) =>
       tsTypeForInlineFragment(
         inlineFragment,
         graphQLType,
@@ -282,7 +282,7 @@ function tsTypeForObjectField(
     );
 
     const typesCoveredByInlineFragments = new Set(
-      inlineFragments.reduce<GraphQLType[]>(
+      [...inlineFragments].reduce<GraphQLType[]>(
         (types, inlineFragment) => [...types, ...inlineFragment.possibleTypes],
         [],
       ),

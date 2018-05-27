@@ -448,6 +448,10 @@ describe('printDocument()', () => {
             name: String!
           }
 
+          interface MultiLived {
+            livesLeft: Int!
+          }
+
           type Person implements Named {
             name: String!
             occupation: String
@@ -458,7 +462,7 @@ describe('printDocument()', () => {
             legs: Int!
           }
 
-          type Cat implements Named {
+          type Cat implements Named & MultiLived {
             name: String!
             livesLeft: Int!
           }
@@ -765,6 +769,81 @@ describe('printDocument()', () => {
           export interface DetailsQueryData {
             __typename: "Query";
             named?: DetailsQueryData.NamedPerson | DetailsQueryData.NamedDog | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('resolves spreads on interface types', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                name
+                ... on MultiLived {
+                  livesLeft
+                }
+              }
+            }`,
+            schema,
+            {
+              printOptions: {addTypename: true},
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedCat {
+              __typename: "Cat";
+              name: string;
+              livesLeft: number;
+            }
+            export interface NamedOther {
+              __typename: "Person" | "Dog";
+              name: string;
+            }
+          }
+          export interface DetailsQueryData {
+            __typename: "Query";
+            named?: DetailsQueryData.NamedCat | DetailsQueryData.NamedOther | null;
+          }
+        `);
+      });
+
+      it('merges spreads on interfaces and object types', () => {
+        const schema = createBasicInterfaceSchema();
+
+        expect(
+          print(
+            `query Details {
+              named {
+                ... on Cat {
+                  name
+                }
+                ... on MultiLived {
+                  livesLeft
+                }
+              }
+            }`,
+            schema,
+            {
+              printOptions: {addTypename: true},
+            },
+          ),
+        ).toContain(stripIndent`
+          export namespace DetailsQueryData {
+            export interface NamedCat {
+              __typename: "Cat";
+              name: string;
+              livesLeft: number;
+            }
+            export interface NamedOther {
+              __typename: "Person" | "Dog";
+            }
+          }
+          export interface DetailsQueryData {
+            __typename: "Query";
+            named?: DetailsQueryData.NamedCat | DetailsQueryData.NamedOther | null;
           }
         `);
       });
