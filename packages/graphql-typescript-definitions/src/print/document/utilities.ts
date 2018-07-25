@@ -1,5 +1,16 @@
 import {ucFirst} from 'change-case';
-import {GraphQLCompositeType} from 'graphql';
+import {
+  GraphQLCompositeType,
+  // We need to bring these in as they are implicitly referenced by
+  // GraphQLCompositeType, but TypeScript doesn’t know this when it
+  // generates its declaration files.
+  // @ts-ignore
+  GraphQLInterfaceType,
+  // @ts-ignore
+  GraphQLObjectType,
+  // @ts-ignore
+  GraphQLUnionType,
+} from 'graphql';
 import {Field} from 'graphql-tool-utilities/ast';
 
 export class ObjectStack {
