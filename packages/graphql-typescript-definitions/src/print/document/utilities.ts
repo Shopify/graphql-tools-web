@@ -7,13 +7,14 @@ export class ObjectStack {
 
   get name(): string {
     const {parent, field, isFragment, type} = this;
-    const name = `${parent ? parent.name : ''}${ucFirst(field.responseName)}`;
+    const fieldName = field ? ucFirst(field.responseName) : '';
+    const name = `${parent ? parent.name : ''}${fieldName}`;
     return isFragment ? `${name}${type ? type.name : 'Other'}` : name;
   }
 
   constructor(
-    private type: GraphQLCompositeType | undefined,
-    private field: Field,
+    private type?: GraphQLCompositeType,
+    private field?: Field,
     private parent?: ObjectStack,
     private isFragment = false,
   ) {}
