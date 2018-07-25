@@ -5,23 +5,25 @@ import {Field} from 'graphql-tool-utilities/ast';
 export class ObjectStack {
   private seenFields = new Set<string>();
 
-  get name() {
-    return this.parentFields
-      .map(({responseName}) => ucFirst(responseName))
-      .join('');
+  get name(): string {
+    const {parent, field, isFragment, type} = this;
+    const name = `${parent ? parent.name : ''}${ucFirst(field.responseName)}`;
+    return isFragment ? `${name}${type ? type.name : 'Other'}` : name;
   }
 
   constructor(
-    _type: GraphQLCompositeType,
-    private parentFields: Field[] = [],
+    private type: GraphQLCompositeType | undefined,
+    private field: Field,
+    private parent?: ObjectStack,
+    private isFragment = false,
   ) {}
 
   nested(field: Field, type: GraphQLCompositeType) {
-    return new ObjectStack(type, [...this.parentFields, field]);
+    return new ObjectStack(type, field, this);
   }
 
-  fragment(type: GraphQLCompositeType) {
-    return new ObjectStack(type, this.parentFields);
+  fragment(type?: GraphQLCompositeType) {
+    return new ObjectStack(type, this.field, this.parent, true);
   }
 
   sawField(field: Field) {
