@@ -33,6 +33,12 @@ const argv = yargs
     type: 'boolean',
     describe: 'Add a __typename field to every object type',
   })
+  .option('scalar-any', {
+    required: false,
+    default: false,
+    type: 'boolean',
+    describe: 'Generate custom scalars as `any` type',
+  })
   .option('enum-format', {
     required: false,
     type: 'string',

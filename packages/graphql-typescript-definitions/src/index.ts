@@ -24,6 +24,7 @@ export interface Options {
   schemaTypesPath: string;
   addTypename: boolean;
   enumFormat?: EnumFormat;
+  scalarAny?: boolean;
 }
 
 export interface RunOptions {

@@ -147,4 +147,26 @@ describe('printSchema()', () => {
       }
     `);
   });
+
+  describe('custom scalar', () => {
+    const schema = buildSchema(`
+      scalar JSON
+    `);
+
+    describe('with scalarAny', () => {
+      it('prints the scalar type as `any`', () => {
+        expect(printSchema(schema, {scalarAny: true})).toContain(stripIndent`
+        export type JSON = any;
+      `);
+      });
+    });
+
+    describe('without scalarAny', () => {
+      it('prints the scalar type as `string`', () => {
+        expect(printSchema(schema)).toContain(stripIndent`
+        export type JSON = string;
+      `);
+      });
+    });
+  });
 });

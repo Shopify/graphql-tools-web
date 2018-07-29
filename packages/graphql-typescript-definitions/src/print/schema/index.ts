@@ -21,6 +21,7 @@ type InputType = GraphQLEnumType | GraphQLScalarType | GraphQLInputObjectType;
 
 export interface Options {
   enumFormat?: EnumFormat;
+  scalarAny?: boolean;
 }
 
 export function printSchema(schema: GraphQLSchema, options: Options = {}) {
@@ -48,7 +49,7 @@ function tsTypeForRootInputType(type: InputType, options: Options) {
   if (isEnumType(type)) {
     return tsEnumForType(type, options);
   } else if (isScalarType(type)) {
-    return tsScalarForType(type);
+    return tsScalarForType(type, options);
   } else {
     return tsInputObjectForType(type);
   }
@@ -97,11 +98,11 @@ function tsInputObjectForType(type: GraphQLInputObjectType) {
   );
 }
 
-function tsScalarForType(type: GraphQLScalarType) {
+function tsScalarForType(type: GraphQLScalarType, {scalarAny}: Options) {
   return t.tsTypeAliasDeclaration(
     t.identifier(type.name),
     null,
-    t.tsStringKeyword(),
+    scalarAny ? t.tsAnyKeyword() : t.tsStringKeyword(),
   );
 }
 
