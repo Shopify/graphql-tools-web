@@ -46,6 +46,7 @@ ENOENT: no such file or directory, open 'packages/graphql-typescript-definitions
     at Builder.<anonymous> (packages/graphql-typescript-definitions/lib/index.js)
     at Generator.throw (<anonymous>)
     at rejected (packages/graphql-typescript-definitions/lib/index.js)
+    at <anonymous>
 
 ",
 }
