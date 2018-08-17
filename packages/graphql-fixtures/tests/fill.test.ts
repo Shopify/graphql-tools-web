@@ -1245,7 +1245,7 @@ describe('createFiller()', () => {
 
       expect(
         fill(document, {
-          initialList: list(2, () => list(2)),
+          initialList: list(2, () => list<string>(2)),
         }),
       ).toEqual({
         initialList: [
