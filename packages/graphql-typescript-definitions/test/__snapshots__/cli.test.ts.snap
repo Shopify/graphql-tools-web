@@ -1,5 +1,34 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`cli fails when the file has different name than the query defined within it 1`] = `
+Object {
+  "error": Object {
+    "cmd": "packages/graphql-typescript-definitions/bin/graphql-typescript-definitions 'packages/graphql-typescript-definitions/test/fixtures/misnamed-file/documents/**/*.graphql' --schema-path 'packages/graphql-typescript-definitions/test/fixtures/misnamed-file/schema.json' --schema-types-path 'packages/graphql-typescript-definitions/test/fixtures/misnamed-file/schema.ts'",
+    "code": 1,
+    "killed": false,
+    "signal": null,
+  },
+  "stderr": "",
+  "stdout": "
+ BUILT  packages/graphql-typescript-definitions/test/fixtures/misnamed-file/schema.ts
+
+ ERROR  Error in packages/graphql-typescript-definitions/test/fixtures/misnamed-file/documents/Query.graphql: Operation name and type do not match file's name. Expected file FindPersonQuery.graphql to contain FindPerson.
+Error: Error in packages/graphql-typescript-definitions/test/fixtures/misnamed-file/documents/Query.graphql: Operation name and type do not match file's name. Expected file FindPersonQuery.graphql to contain FindPerson.
+    at Builder.<anonymous> (packages/graphql-typescript-definitions/lib/index.js)
+    at Generator.next (<anonymous>)
+    at packages/graphql-typescript-definitions/lib/index.js
+    at new Promise (<anonymous>)
+    at __awaiter (packages/graphql-typescript-definitions/lib/index.js)
+    at Promise.all.Object.keys.map (packages/graphql-typescript-definitions/lib/index.js)
+    at Array.map (<anonymous>)
+    at Builder.<anonymous> (packages/graphql-typescript-definitions/lib/index.js)
+    at Generator.next (<anonymous>)
+    at packages/graphql-typescript-definitions/lib/index.js
+
+",
+}
+`;
+
 exports[`cli fails when there are syntax errors 1`] = `
 Object {
   "error": Object {
@@ -59,7 +88,7 @@ Object {
   "stdout": "
  BUILT  packages/graphql-typescript-definitions/test/fixtures/missing-types/schema.ts
 
- BUILT  packages/graphql-typescript-definitions/test/fixtures/missing-types/documents/Query.graphql → packages/graphql-typescript-definitions/test/fixtures/missing-types/documents/Query.graphql.d.ts
+ BUILT  packages/graphql-typescript-definitions/test/fixtures/missing-types/documents/FindPersonQuery.graphql → packages/graphql-typescript-definitions/test/fixtures/missing-types/documents/FindPersonQuery.graphql.d.ts
  BUILT  packages/graphql-typescript-definitions/test/fixtures/missing-types/documents/Fragment.graphql → packages/graphql-typescript-definitions/test/fixtures/missing-types/documents/Fragment.graphql.d.ts
 ",
 }
@@ -72,7 +101,7 @@ Object {
   "stdout": "
  BUILT  packages/graphql-typescript-definitions/test/fixtures/all-clear/schema.ts
 
- BUILT  packages/graphql-typescript-definitions/test/fixtures/all-clear/documents/Query.graphql → packages/graphql-typescript-definitions/test/fixtures/all-clear/documents/Query.graphql.d.ts
+ BUILT  packages/graphql-typescript-definitions/test/fixtures/all-clear/documents/FindPersonQuery.graphql → packages/graphql-typescript-definitions/test/fixtures/all-clear/documents/FindPersonQuery.graphql.d.ts
  BUILT  packages/graphql-typescript-definitions/test/fixtures/all-clear/documents/Fragment.graphql → packages/graphql-typescript-definitions/test/fixtures/all-clear/documents/Fragment.graphql.d.ts
 ",
 }

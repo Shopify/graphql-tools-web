@@ -27,6 +27,12 @@ describe('cli', () => {
       await execDetails(cliCommandForFixtureDirectory('missing-types')),
     ).toMatchSnapshot();
   });
+
+  it('fails when the file has different name than the query defined within it', async () => {
+    expect(
+      await execDetails(cliCommandForFixtureDirectory('misnamed-file')),
+    ).toMatchSnapshot();
+  });
 });
 
 function execDetails(command: string) {
