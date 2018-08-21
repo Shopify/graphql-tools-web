@@ -308,17 +308,20 @@ function getFileNameFromPath(path: string) {
 function checkFileNameMismatch(file: File) {
   const {operation} = file;
 
-  return (
-    operation &&
-    getFileNameFromPath(operation.filePath) !==
-      `${operation.operationName}${toCapitalized(operation.operationType)}`
-  );
+  if (!operation) {
+    return false;
+  }
+
+  const {filePath, operationName, operationType} = operation;
+  const fileName = getFileNameFromPath(filePath);
+  const type = toCapitalized(operationType);
+
+  return fileName !== `${operationName}${type}`;
 }
 
 function getExpectedFileNameFromOperation(operation: Operation) {
-  return `${operation.operationName}${toCapitalized(
-    operation.operationType,
-  )}${extname(operation.filePath)}`;
+  const {operationName, operationType, filePath} = operation;
+  return `${operationName}${toCapitalized(operationType)}${extname(filePath)}`;
 }
 
 function toCapitalized(str: string) {
