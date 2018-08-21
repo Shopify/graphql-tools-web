@@ -7,7 +7,7 @@ import {
   Source,
   concatAST,
 } from 'graphql';
-import {dirname} from 'path';
+import {dirname, basename, extname} from 'path';
 import {readJSON, readFile, writeFile, mkdirp} from 'fs-extra';
 import {watch} from 'chokidar';
 import * as glob from 'glob';
@@ -174,7 +174,25 @@ export class Builder extends EventEmitter {
       const buildResults = await Promise.all(
         Object.keys(fileMap).map(async (key) => {
           const file = fileMap[key];
+          const {operation} = file;
+
           let definition: string;
+
+          if (operation && checkFileNameMismatch(file)) {
+            const {operationName} = operation;
+            const expectedFileName = getExpectedFileNameFromOperation(
+              operation,
+            );
+
+            const error = new Error(
+              `Error in ${
+                file.path
+              }: Operation name and type do not match file's name. Expected file ${expectedFileName} to contain ${operationName}.`,
+            );
+            this.emit('error', error);
+            throw error;
+          }
+
           try {
             definition = printDocument(file, ast, this.options);
           } catch ({message}) {
@@ -277,4 +295,35 @@ function groupOperationsAndFragmentsByFile({
   });
 
   return map;
+}
+
+function getFileNameFromPath(path: string) {
+  const fileName = basename(path);
+  const fileExtension = extname(path);
+  const extensionLength = fileExtension.length;
+
+  return fileName.slice(0, -extensionLength);
+}
+
+function checkFileNameMismatch(file: File) {
+  const {operation} = file;
+
+  if (!operation) {
+    return false;
+  }
+
+  const {filePath, operationName, operationType} = operation;
+  const fileName = getFileNameFromPath(filePath);
+  const type = toCapitalized(operationType);
+
+  return fileName !== `${operationName}${type}`;
+}
+
+function getExpectedFileNameFromOperation(operation: Operation) {
+  const {operationName, operationType, filePath} = operation;
+  return `${operationName}${toCapitalized(operationType)}${extname(filePath)}`;
+}
+
+function toCapitalized(str: string) {
+  return str.charAt(0).toUpperCase() + str.substr(1);
 }
