@@ -1,5 +1,34 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`cli fails when multiple queries have the same name 1`] = `
+Object {
+  "error": Object {
+    "cmd": "packages/graphql-typescript-definitions/bin/graphql-typescript-definitions 'packages/graphql-typescript-definitions/test/fixtures/duplicate-names/documents/**/*.graphql' --schema-path 'packages/graphql-typescript-definitions/test/fixtures/duplicate-names/schema.json' --schema-types-path 'packages/graphql-typescript-definitions/test/fixtures/duplicate-names/schema.ts'",
+    "code": 1,
+    "killed": false,
+    "signal": null,
+  },
+  "stderr": "",
+  "stdout": "
+ BUILT  packages/graphql-typescript-definitions/test/fixtures/duplicate-names/schema.ts
+
+ ERROR  Graphql operations must have unique names. Found 2 or more operations with the name \\"FindPerson\\"
+Error: Graphql operations must have unique names. Found 2 or more operations with the name \\"FindPerson\\"
+    at duplicateNames.forEach (packages/graphql-typescript-definitions/lib/index.js)
+    at Array.forEach (<anonymous>)
+    at Builder.<anonymous> (packages/graphql-typescript-definitions/lib/index.js)
+    at Generator.next (<anonymous>)
+    at packages/graphql-typescript-definitions/lib/index.js
+    at new Promise (<anonymous>)
+    at __awaiter (packages/graphql-typescript-definitions/lib/index.js)
+    at Builder.generateDocumentTypes (packages/graphql-typescript-definitions/lib/index.js)
+    at Builder.<anonymous> (packages/graphql-typescript-definitions/lib/index.js)
+    at Generator.next (<anonymous>)
+
+",
+}
+`;
+
 exports[`cli fails when there are syntax errors 1`] = `
 Object {
   "error": Object {

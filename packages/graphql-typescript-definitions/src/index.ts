@@ -3,6 +3,8 @@ import {
   buildClientSchema,
   GraphQLSchema,
   DocumentNode,
+  DefinitionNode,
+  OperationDefinitionNode,
   parse,
   Source,
   concatAST,
@@ -158,6 +160,17 @@ export class Builder extends EventEmitter {
     this.emit('start');
     let ast: AST;
 
+    const duplicateNames = getDuplicateOperationNames(this.documentCache);
+
+    if (duplicateNames.length) {
+      duplicateNames.forEach((name) => {
+        const error = new Error(
+          `Graphql operations must have unique names. Found 2 or more operations with the name "${name}"`,
+        );
+        this.emit('error', error);
+      });
+    }
+
     try {
       ast = compile(
         this.schema,
@@ -277,4 +290,38 @@ function groupOperationsAndFragmentsByFile({
   });
 
   return map;
+}
+
+function getDuplicateOperationNames(documents: Map<string, DocumentNode>) {
+  const duplicates: string[] = [];
+
+  const documentNames = Array.from(documents.values())
+    .map((document) => {
+      return document.definitions.filter(isOperation).map((definition) => {
+        const {name} = definition as OperationDefinitionNode;
+        return name && name.value;
+      });
+    })
+    .reduce(flattenArray, []);
+
+  documentNames.forEach((name, index) => {
+    if (documentNames.indexOf(name, index + 1) > -1) {
+      if (name && duplicates.indexOf(name) === -1) {
+        duplicates.push(name);
+      }
+    }
+  });
+
+  return duplicates;
+}
+
+function isOperation(definition: DefinitionNode) {
+  return definition.kind === 'OperationDefinition';
+}
+
+function flattenArray(
+  accumulator: (string | undefined)[],
+  names: (string | undefined)[],
+) {
+  return accumulator.concat(names);
 }
