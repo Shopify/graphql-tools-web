@@ -160,12 +160,14 @@ export class Builder extends EventEmitter {
     this.emit('start');
     let ast: AST;
 
-    const duplicateNames = getDuplicateOperationNames(this.documentCache);
+    const duplicateOperations = getDuplicateOperations(this.documentCache);
 
-    if (duplicateNames.length) {
-      duplicateNames.forEach((name) => {
+    if (duplicateOperations.length) {
+      duplicateOperations.forEach(({name, files}) => {
         const error = new Error(
-          `Graphql operations must have unique names. Found 2 or more operations with the name "${name}"`,
+          `Graphql operations must have a unique name. The operation "${name}" is declared in:\n ${files.join(
+            '\n ',
+          )}`,
         );
         this.emit('error', error);
       });
@@ -292,36 +294,30 @@ function groupOperationsAndFragmentsByFile({
   return map;
 }
 
-function getDuplicateOperationNames(documents: Map<string, DocumentNode>) {
-  const duplicates: string[] = [];
+function getDuplicateOperations(documents: Map<string, DocumentNode>) {
+  const operations = new Map<string, Set<string>>();
 
-  const documentNames = Array.from(documents.values())
-    .map((document) => {
-      return document.definitions.filter(isOperation).map((definition) => {
-        const {name} = definition as OperationDefinitionNode;
-        return name && name.value;
-      });
-    })
-    .reduce(flattenArray, []);
-
-  documentNames.forEach((name, index) => {
-    if (documentNames.indexOf(name, index + 1) > -1) {
-      if (name && duplicates.indexOf(name) === -1) {
-        duplicates.push(name);
+  Array.from(documents.entries()).forEach(([path, document]) => {
+    document.definitions.filter(isOperation).forEach((definition) => {
+      const {name} = definition as OperationDefinitionNode;
+      if (name && name.value) {
+        const map = operations.get(name.value);
+        if (map) {
+          map.add(path);
+        } else {
+          operations.set(name.value, new Set([path]));
+        }
       }
-    }
+    });
   });
 
-  return duplicates;
+  return Array.from(operations.entries())
+    .filter(([, files]) => files.size > 1)
+    .map(([operation, files]) => {
+      return {name: operation, files: Array.from(files)};
+    });
 }
 
 function isOperation(definition: DefinitionNode) {
   return definition.kind === 'OperationDefinition';
-}
-
-function flattenArray(
-  accumulator: (string | undefined)[],
-  names: (string | undefined)[],
-) {
-  return accumulator.concat(names);
 }

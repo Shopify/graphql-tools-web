@@ -12,9 +12,13 @@ Object {
   "stdout": "
  BUILT  packages/graphql-typescript-definitions/test/fixtures/duplicate-names/schema.ts
 
- ERROR  Graphql operations must have unique names. Found 2 or more operations with the name \\"FindPerson\\"
-Error: Graphql operations must have unique names. Found 2 or more operations with the name \\"FindPerson\\"
-    at duplicateNames.forEach (packages/graphql-typescript-definitions/lib/index.js)
+ ERROR  Graphql operations must have a unique name. The operation \\"FindPerson\\" is declared in:
+ packages/graphql-typescript-definitions/test/fixtures/duplicate-names/documents/Query2/FindPersonQuery.graphql
+ packages/graphql-typescript-definitions/test/fixtures/duplicate-names/documents/Query1/FindPersonsQuery.graphql
+Error: Graphql operations must have a unique name. The operation \\"FindPerson\\" is declared in:
+ packages/graphql-typescript-definitions/test/fixtures/duplicate-names/documents/Query2/FindPersonQuery.graphql
+ packages/graphql-typescript-definitions/test/fixtures/duplicate-names/documents/Query1/FindPersonsQuery.graphql
+    at duplicateOperations.forEach (packages/graphql-typescript-definitions/lib/index.js)
     at Array.forEach (<anonymous>)
     at Builder.<anonymous> (packages/graphql-typescript-definitions/lib/index.js)
     at Generator.next (<anonymous>)
