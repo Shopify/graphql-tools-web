@@ -9,6 +9,7 @@ import {
   Source,
   concatAST,
 } from 'graphql';
+import chalk from 'chalk';
 import {dirname} from 'path';
 import {readJSON, readFile, writeFile, mkdirp} from 'fs-extra';
 import {watch} from 'chokidar';
@@ -165,9 +166,9 @@ export class Builder extends EventEmitter {
     if (duplicateOperations.length) {
       duplicateOperations.forEach(({name, files}) => {
         const error = new Error(
-          `Graphql operations must have a unique name. The operation "${name}" is declared in:\n ${files.join(
-            '\n ',
-          )}`,
+          `GraphQL operations must have a unique name. The operation ${chalk.bold(
+            name,
+          )} is declared in:\n ${files.join('\n ')}`,
         );
         this.emit('error', error);
       });
