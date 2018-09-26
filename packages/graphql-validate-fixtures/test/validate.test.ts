@@ -1,10 +1,7 @@
 import {join} from 'path';
-import {GraphQLSchema, buildSchema, parse, concatAST} from 'graphql';
+import {buildSchema, parse, concatAST} from 'graphql';
 import {compile, AST} from 'graphql-tool-utilities/ast';
-import {
-  validateFixtureAgainstAST,
-  validateFixtureAgainstSchema,
-} from '../src/validate';
+import {validateFixtureAgainstAST} from '../src/validate';
 
 describe('validate', () => {
   describe('validateFixtureAgainstAST()', () => {
@@ -495,46 +492,6 @@ describe('validate', () => {
       ).toMatchSnapshot();
     });
   });
-
-  describe('validateFixtureAgainstSchema()', () => {
-    it('validates fields against types from the schema', () => {
-      const schema = buildSchema(`
-        type Person {
-          name: String!
-          age: Int!
-          occupation: String
-          nickNames: [String!]
-        }
-
-        type Query {
-          friends: [Person!]!
-          person: Person!
-        }
-
-        type Mutation {
-          landJob(job: String!): Person!
-        }
-      `);
-
-      expect(
-        validateAgainstSchema(
-          {
-            person: {
-              name: 'Chris',
-              age: 42.2,
-              silly: true,
-              nickNames: {},
-            },
-            friends: [{firstName: 'Mica'}, {name: null}],
-            landJob: {
-              occupation: 'Code monkey',
-            },
-          },
-          schema,
-        ),
-      ).toMatchSnapshot();
-    });
-  });
 });
 
 function validateAgainstAST(fixture: any, ast: AST) {
@@ -545,16 +502,6 @@ function validateAgainstAST(fixture: any, ast: AST) {
       content: fixture,
     },
     ast,
-  );
-}
-
-function validateAgainstSchema(fixture: any, schema: GraphQLSchema) {
-  return validateFixtureAgainstSchema(
-    {
-      path: 'fixture.json',
-      content: fixture,
-    },
-    schema,
   );
 }
 
