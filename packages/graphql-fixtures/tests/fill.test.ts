@@ -195,12 +195,10 @@ describe('createFiller()', () => {
     it('uses the same value for a given keypath', () => {
       const document = createDocument(`
         query Details {
-          self { name, petPreference, birthday}
+          self { name, petPreference, birthday }
           sibling { name }
         }
       `);
-
-      console.log(fill(document));
 
       expect(fill(document)).toEqual(fill(document));
     });

@@ -266,7 +266,10 @@ function fillType(
       ? array.map((value: any) =>
           fillType(
             unwrappedType.ofType,
-            field,
+            {
+              ...field,
+              responseName: (field.responseName += parentFields.indexOf(field)),
+            },
             value,
             parent,
             parentFields,
