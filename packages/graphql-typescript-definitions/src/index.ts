@@ -1,7 +1,5 @@
 import {EventEmitter} from 'events';
 import {
-  buildClientSchema,
-  GraphQLSchema,
   DocumentNode,
   DefinitionNode,
   OperationDefinitionNode,
@@ -11,7 +9,7 @@ import {
 } from 'graphql';
 import chalk from 'chalk';
 import {dirname, resolve} from 'path';
-import {readJSON, readFile, writeFile, mkdirp} from 'fs-extra';
+import {readFile, writeFile, mkdirp} from 'fs-extra';
 import {watch} from 'chokidar';
 import * as glob from 'glob';
 import {
@@ -123,7 +121,7 @@ export class Builder extends EventEmitter {
 
   async run({watch: watchGlobs = false} = {}) {
     const globs = this.getGlobs();
-    const schemaPaths = this.getSchemaPaths();
+    const schemaPaths = getGraphQLSchemaPaths(this.config);
 
     const update = async (filePath: string) => {
       try {
@@ -152,7 +150,7 @@ export class Builder extends EventEmitter {
         schemaWatcher.on('change', async (schemaPath: string) => {
           try {
             this.emit('start:schema');
-            await this.updateSchemaAndGenerateTypes(schemaPath);
+            await this.generateSchemaTypes(schemaPath);
             this.emit('end:schema');
 
             await this.generateDocumentTypes();
@@ -166,7 +164,7 @@ export class Builder extends EventEmitter {
     try {
       this.emit('start:schema');
       await Promise.all(
-        schemaPaths.map(this.updateSchemaAndGenerateTypes.bind(this)),
+        schemaPaths.map((schemaPath) => this.generateSchemaTypes(schemaPath)),
       );
       this.emit('end:schema');
     } catch (error) {
@@ -179,7 +177,7 @@ export class Builder extends EventEmitter {
         globs
           .map((pattern) => glob.sync(pattern))
           .reduce((patterns, globbed) => patterns.concat(globbed), [])
-          .map(this.updateDocumentForFile.bind(this)),
+          .map((filePath) => this.updateDocumentForFile(filePath)),
       );
     } catch (error) {
       this.emit('error', error);
@@ -189,12 +187,14 @@ export class Builder extends EventEmitter {
     await this.generateDocumentTypes();
   }
 
-  private async generateSchemaTypes(schemaPath: string, schema: GraphQLSchema) {
-    const schemaTypesPath = getSchemaTypesPath(
-      getGraphQLProjectForSchemaPath(this.config, schemaPath),
-      this.options,
+  private async generateSchemaTypes(schemaPath: string) {
+    const projectConfig = getGraphQLProjectForSchemaPath(
+      this.config,
+      schemaPath,
     );
-    const definition = printSchema(schema, this.options);
+
+    const schemaTypesPath = getSchemaTypesPath(projectConfig, this.options);
+    const definition = printSchema(projectConfig.getSchema(), this.options);
     await mkdirp(dirname(schemaTypesPath));
     await writeFile(schemaTypesPath, definition);
     this.emit('build:schema', {
@@ -305,26 +305,6 @@ export class Builder extends EventEmitter {
     }
   }
 
-  private async updateSchemaAndGenerateTypes(schemaPath: string) {
-    const schema = await this.updateSchema(schemaPath);
-    await this.generateSchemaTypes(schemaPath, schema);
-  }
-
-  private async updateSchema(schemaPath: string) {
-    try {
-      const schemaJSON = await readJSON(schemaPath);
-      return buildClientSchema(schemaJSON.data);
-    } catch (error) {
-      const parseError = new Error(
-        `Error parsing '${schemaPath}':\n\n${error.message.replace(
-          /Syntax Error GraphQL \(.*?\) /,
-          '',
-        )}`,
-      );
-      throw parseError;
-    }
-  }
-
   private async updateDocumentForFile(filePath: string) {
     const project = this.config.getConfigForFile(filePath);
 
@@ -351,22 +331,17 @@ export class Builder extends EventEmitter {
     return document;
   }
 
-  private getProjects() {
-    return getGraphQLProjects(this.config);
-  }
-
   private getGlobs() {
-    return this.getProjects().reduce<string[]>((globs, project) => {
-      return globs.concat(
-        project.includes.map((filePath) =>
-          getGraphQLFilePath(this.config, filePath),
-        ),
-      );
-    }, []);
-  }
-
-  private getSchemaPaths() {
-    return getGraphQLSchemaPaths(this.config);
+    return getGraphQLProjects(this.config).reduce<string[]>(
+      (globs, project) => {
+        return globs.concat(
+          project.includes.map((filePath) =>
+            getGraphQLFilePath(this.config, filePath),
+          ),
+        );
+      },
+      [],
+    );
   }
 
   private removeDocumentForFile(filePath: string) {
