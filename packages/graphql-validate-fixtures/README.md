@@ -23,11 +23,7 @@ In order to associate a fixture with a GraphQL query or mutation in your app, yo
 
 Once this is done, you can validate your fixtures using the CLI or Node.js API.
 
-### Configuration
-
-This tool reads schema information from a [`.graphqlconfig`](https://github.com/prisma/graphql-config) file in the project root. The configuration can contain one nameless project or many named projects. The configuration is compatible with the [vscode-graphql extension](https://github.com/prisma/vscode-graphql). This extension provides syntax highlighting and autocomplete suggestions for graphql files.
-
-Each project specifies a `schemaPath`, `include`, and `exclude` globs. Glob patterns match paths relative to the location of the configuration file. Omit `exclude` if empty.
+### Operation
 
 On startup this tool performs the following actions:
 
@@ -38,55 +34,9 @@ On startup this tool performs the following actions:
   * Reports operation not found error if no schema matches
   * Reports ambiguous operation name error if more than one schema matches
 
-See the [official specification documentation](https://github.com/prisma/graphql-config/blob/master/specification.md#use-cases) for more detail and examples.
+### Configuration
 
-#### Examples
-
-A single nameless project configuration
-
-```json
-{
-  "schemaPath": "build/schema.json",
-  "includes": "app/**/*.graphql"
-}
-```
-
-A multi-project configuration
-
-```json
-{
-  "projects": {
-    "foo": {
-      "schemaPath": "build/schema/foo.json",
-      "includes": "app/foo/**/*.graphql"
-    },
-    "bar": {
-      "schemaPath": "build/schema/bar.json",
-      "includes": "app/bar/**/*.graphql"
-    }
-  }
-}
-```
-
-A project configuration with a `schemaTypesPath` override
-
-```json
-{
-  "projects": {
-    "foo": {
-      "schemaPath": "build/schema/foo.json",
-      "includes": "app/foo/**/*.graphql"
-    },
-    "bar": {
-      "schemaPath": "build/schema/bar.json",
-      "includes": "app/bar/**/*.graphql",
-      "extensions": {
-        "schemaTypesPath": "app/bar/types/graphql.ts"
-      }
-    }
-  }
-}
-```
+This tool reads schema information from a [`.graphqlconfig`](https://github.com/Shopify/graphql-tools-web/tree/master/packages/graphql-tool-utilities#configuration) file in the project root.
 
 ### CLI
 
