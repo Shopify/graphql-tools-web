@@ -5,13 +5,13 @@ Array [
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/ambiguous-operation/fixtures/projectA/AmbiguousQuery/fixture.json",
     "validationErrors": Array [
-      [Error: Ambiguous operation name 'AmbiguousQuery' in 'packages/graphql-validate-fixtures/test/fixtures/ambiguous-operation/fixtures/projectA/AmbiguousQuery/fixture.json' for projects: projectA, projectB],
+      [Error: Ambiguous operation name found for 'packages/graphql-validate-fixtures/test/fixtures/ambiguous-operation/fixtures/projectA/AmbiguousQuery/fixture.json' (found Ambiguous) in projects: projectA, projectB. Try renaming the operation in one of the projects listed and updating the fixture folder name or use an '@operation' key indicating the new operation name.],
     ],
   },
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/ambiguous-operation/fixtures/projectB/AmbiguousQuery/fixture.json",
     "validationErrors": Array [
-      [Error: Ambiguous operation name 'AmbiguousQuery' in 'packages/graphql-validate-fixtures/test/fixtures/ambiguous-operation/fixtures/projectB/AmbiguousQuery/fixture.json' for projects: projectA, projectB],
+      [Error: Ambiguous operation name found for 'packages/graphql-validate-fixtures/test/fixtures/ambiguous-operation/fixtures/projectB/AmbiguousQuery/fixture.json' (found Ambiguous) in projects: projectA, projectB. Try renaming the operation in one of the projects listed and updating the fixture folder name or use an '@operation' key indicating the new operation name.],
     ],
   },
 ]
@@ -26,7 +26,7 @@ Array [
   },
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/fixture-invalid/fixtures/MyQuery/fixture.json",
-    "operationName": "MyQuery",
+    "operationName": "My",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/fixture-invalid/queries/Query.graphql",
     "operationType": "query",
     "validationErrors": Array [],
@@ -38,7 +38,7 @@ exports[`evaluateFixtures() handles fixtures with errors 1`] = `
 Array [
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/fixture-errors/fixtures/another-fixture.json",
-    "operationName": "AnotherQuery",
+    "operationName": "Another",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/fixture-errors/queries/Another.graphql",
     "operationType": "query",
     "validationErrors": Array [
@@ -54,7 +54,7 @@ Array [
   },
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/fixture-errors/fixtures/MyQuery/fixture.json",
-    "operationName": "MyQuery",
+    "operationName": "My",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/fixture-errors/queries/Query.graphql",
     "operationType": "query",
     "validationErrors": Array [],
@@ -73,14 +73,14 @@ Array [
   },
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/all-clear/fixtures/another-fixture.json",
-    "operationName": "AnotherQuery",
+    "operationName": "Another",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/all-clear/queries/Another.graphql",
     "operationType": "query",
     "validationErrors": Array [],
   },
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/all-clear/fixtures/MyQuery/fixture.json",
-    "operationName": "MyQuery",
+    "operationName": "My",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/all-clear/queries/Query.graphql",
     "operationType": "query",
     "validationErrors": Array [],
@@ -92,7 +92,7 @@ exports[`evaluateFixtures() handles missing operation names in multi-project fix
 Array [
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/missing-operation/fixtures/projectA/AQuery/fixture.json",
-    "operationName": "AQuery",
+    "operationName": "A",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/missing-operation/queries/projectA/Query.graphql",
     "operationType": "query",
     "validationErrors": Array [],
@@ -100,7 +100,7 @@ Array [
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/missing-operation/fixtures/projectB/Missing/fixture.json",
     "validationErrors": Array [
-      [Error: Could not find a matching operation (looked for 'Missing' based on the fixture’s directory name). Make sure to put your fixture in a folder named the same as the operation, or add an '@operation' key indicating the operation.. Available operations: A, B],
+      [Error: Could not find a matching operation for 'packages/graphql-validate-fixtures/test/fixtures/missing-operation/fixtures/projectB/Missing/fixture.json' (looked for Missing). Make sure to put your fixture in a folder named the same as the operation, or add an '@operation' key indicating the operation. Available operations: A, B],
     ],
   },
 ]
@@ -110,14 +110,14 @@ exports[`evaluateFixtures() handles multi-project fixtures without errors 1`] = 
 Array [
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/multi-project/fixtures/projectA/AQuery/fixture.json",
-    "operationName": "AQuery",
+    "operationName": "A",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/multi-project/queries/projectA/Query.graphql",
     "operationType": "query",
     "validationErrors": Array [],
   },
   Object {
     "fixturePath": "packages/graphql-validate-fixtures/test/fixtures/multi-project/fixtures/projectB/BQuery/fixture.json",
-    "operationName": "BQuery",
+    "operationName": "B",
     "operationPath": "packages/graphql-validate-fixtures/test/fixtures/multi-project/queries/projectB/Query.graphql",
     "operationType": "query",
     "validationErrors": Array [],

@@ -1,7 +1,13 @@
 import {join} from 'path';
 import {buildSchema, parse, concatAST} from 'graphql';
+import {GraphQLProjectConfig} from 'graphql-config';
 import {compile, AST} from 'graphql-tool-utilities/ast';
-import {validateFixtureAgainstAST} from '../src/validate';
+import {
+  getOperationForFixture,
+  validateFixture,
+  GraphQLProjectOperations,
+  Fixture,
+} from '../src/validate';
 
 describe('validate', () => {
   describe('validateFixtureAgainstAST()', () => {
@@ -494,15 +500,26 @@ describe('validate', () => {
   });
 });
 
-function validateAgainstAST(fixture: any, ast: AST) {
-  const queryName = Object.keys(ast.operations)[0];
-  return validateFixtureAgainstAST(
-    {
-      path: join(queryName, 'fixture.json'),
-      content: fixture,
-    },
+const mockGraphQLConfig = new GraphQLProjectConfig(
+  {
+    schemaPath: '.',
+  },
+  '.',
+  'test',
+);
+
+function validateAgainstAST(fixtureContent: any, ast: AST) {
+  const projectOperations: GraphQLProjectOperations = {
     ast,
-  );
+    config: mockGraphQLConfig,
+  };
+  const queryName = Object.keys(ast.operations)[0];
+  const fixture: Fixture = {
+    path: join(queryName, 'fixture.json'),
+    content: fixtureContent,
+  };
+  const {operation} = getOperationForFixture(fixture, [projectOperations]);
+  return validateFixture(fixture, ast, operation);
 }
 
 function createAST(schemaString: string, ...queryStrings: string[]) {
