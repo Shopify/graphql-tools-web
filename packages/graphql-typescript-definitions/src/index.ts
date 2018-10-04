@@ -9,7 +9,7 @@ import {
 } from 'graphql';
 import chalk from 'chalk';
 import {dirname, join, resolve} from 'path';
-import {readFile, writeFile, mkdirp} from 'fs-extra';
+import {readFileSync, writeFileSync, mkdirpSync} from 'fs-extra';
 import {FSWatcher, watch} from 'chokidar';
 import * as glob from 'glob';
 import {
@@ -139,10 +139,7 @@ export class Builder extends EventEmitter {
 
     try {
       this.emit('start:schema');
-
-      await Promise.all(
-        schemaPaths.map((schemaPath) => this.generateSchemaTypes(schemaPath)),
-      );
+      schemaPaths.forEach((schemaPath) => this.generateSchemaTypes(schemaPath));
       this.emit('end:schema');
     } catch (error) {
       this.emit('error', error);
@@ -150,17 +147,15 @@ export class Builder extends EventEmitter {
     }
 
     try {
-      await Promise.all(
-        getGraphQLProjects(this.config).flatMap((projectConfig) =>
-          this.updateDocumentsForProject(projectConfig),
-        ),
+      getGraphQLProjects(this.config).forEach((projectConfig) =>
+        this.updateDocumentsForProject(projectConfig),
       );
     } catch (error) {
       this.emit('error', error);
       return;
     }
 
-    await this.generateDocumentTypes();
+    this.generateDocumentTypes();
   }
 
   stop() {
@@ -172,25 +167,18 @@ export class Builder extends EventEmitter {
   }
 
   private setupDocumentWatchers() {
-    const updateForProject = async (
-      filePath: string,
-      projectConfig: GraphQLProjectConfig,
-    ) => {
+    const update = (filePath: string, projectConfig: GraphQLProjectConfig) => {
       try {
-        await this.updateDocumentForFile(filePath, projectConfig);
+        this.updateDocumentForFile(filePath, projectConfig);
       } catch (error) {
         this.emit('error', error);
         return;
       }
 
-      await this.generateDocumentTypes();
+      this.generateDocumentTypes();
     };
 
     return getGraphQLProjects(this.config).map((projectConfig) => {
-      function update(filePath: string) {
-        return updateForProject(filePath, projectConfig);
-      }
-
       return watch(
         projectConfig.includes.map((include) =>
           getGraphQLFilePath(this.config, include),
@@ -202,9 +190,9 @@ export class Builder extends EventEmitter {
           ignoreInitial: true,
         },
       )
-        .on('add', update) // TODO: async function not supported
-        .on('change', update) // TODO: async function not supported
-        .on('unlink', async (filePath: string) => {
+        .on('add', (filePath: string) => update(filePath, projectConfig))
+        .on('change', (filePath: string) => update(filePath, projectConfig))
+        .on('unlink', (filePath: string) => {
           const documents = this.documentMapByProject.get(
             projectConfig.projectName,
           );
@@ -213,19 +201,19 @@ export class Builder extends EventEmitter {
             documents.delete(filePath);
           }
 
-          await this.generateDocumentTypes();
+          this.generateDocumentTypes();
         });
     });
   }
 
   private setupSchemaWatcher() {
-    const update = async (schemaPath: string) => {
+    const update = (schemaPath: string) => {
       try {
         this.emit('start:schema');
-        await this.generateSchemaTypes(schemaPath);
+        this.generateSchemaTypes(schemaPath);
         this.emit('end:schema');
 
-        await this.generateDocumentTypes();
+        this.generateDocumentTypes();
       } catch (error) {
         // intentional noop
       }
@@ -233,11 +221,11 @@ export class Builder extends EventEmitter {
 
     return watch(getGraphQLSchemaPaths(this.config), {ignoreInitial: true}).on(
       'change',
-      update, // TODO: async function not supported
+      update,
     );
   }
 
-  private async generateSchemaTypes(schemaPath: string) {
+  private generateSchemaTypes(schemaPath: string) {
     const projectConfig = getGraphQLProjectForSchemaPath(
       this.config,
       schemaPath,
@@ -245,15 +233,15 @@ export class Builder extends EventEmitter {
 
     const schemaTypesPath = getSchemaTypesPath(projectConfig, this.options);
     const definition = printSchema(projectConfig.getSchema(), this.options);
-    await mkdirp(dirname(schemaTypesPath));
-    await writeFile(schemaTypesPath, definition);
+    mkdirpSync(dirname(schemaTypesPath));
+    writeFileSync(schemaTypesPath, definition);
     this.emit('build:schema', {
       schemaPath,
       schemaTypesPath,
     });
   }
 
-  private async generateDocumentTypes() {
+  private generateDocumentTypes() {
     this.emit('start:docs');
 
     getDuplicateOperations(this.documentMapByProject).forEach(
@@ -272,22 +260,21 @@ export class Builder extends EventEmitter {
       },
     );
 
-    await Promise.all(
-      Array.from(this.documentMapByProject.entries()).map(
-        ([projectName, documents]) => {
-          return this.generateDocumentTypesForProject(
-            this.config.getProjectConfig(projectName),
-            documents,
-          );
-        },
-      ),
-    );
+    for (const [
+      projectName,
+      documents,
+    ] of this.documentMapByProject.entries()) {
+      this.generateDocumentTypesForProject(
+        this.config.getProjectConfig(projectName),
+        documents,
+      );
+    }
 
     this.emit('end:docs');
   }
 
-  private async generateDocumentTypesForProject(
-    project: GraphQLProjectConfig,
+  private generateDocumentTypesForProject(
+    projectConfig: GraphQLProjectConfig,
     documents: Map<string, DocumentNode>,
   ) {
     let ast: AST;
@@ -305,21 +292,15 @@ export class Builder extends EventEmitter {
     const fileMap = groupOperationsAndFragmentsByFile(ast);
 
     try {
-      const buildResults = await Promise.all(
-        Array.from(fileMap.values()).map((file) => {
-          return this.writeDocumentFile(file, ast, project);
-        }),
-      );
-
-      for (const buildResult of buildResults) {
-        this.emit('build:docs', buildResult);
+      for (const file of fileMap.values()) {
+        this.writeDocumentFile(file, ast, projectConfig);
       }
     } catch (error) {
       // intentional noop
     }
   }
 
-  private async writeDocumentFile(
+  private writeDocumentFile(
     file: File,
     ast: AST,
     project: GraphQLProjectConfig,
@@ -327,14 +308,16 @@ export class Builder extends EventEmitter {
     const definitionPath = `${file.path}.d.ts`;
     const definition = this.getDocumentDefinition(file, ast, project);
 
-    await writeFile(definitionPath, definition);
+    writeFileSync(definitionPath, definition);
 
-    return {
+    const result = {
       documentPath: file.path,
       definitionPath,
       operation: file.operation,
       fragments: file.fragments,
     };
+
+    this.emit('build:docs', result);
   }
 
   private getDocumentDefinition(
@@ -373,7 +356,7 @@ export class Builder extends EventEmitter {
     ).map((filePath) => this.updateDocumentForFile(filePath, projectConfig));
   }
 
-  private async updateDocumentForFile(
+  private updateDocumentForFile(
     filePath: string,
     project: GraphQLProjectConfig,
   ) {
@@ -384,7 +367,7 @@ export class Builder extends EventEmitter {
       this.documentMapByProject.set(project.projectName, documents);
     }
 
-    const contents = await readFile(filePath, 'utf8');
+    const contents = readFileSync(filePath, 'utf8');
 
     if (contents.trim().length === 0) {
       return undefined;
