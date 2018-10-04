@@ -1,6 +1,5 @@
 import {dirname, basename} from 'path';
 import {
-  GraphQLSchema,
   GraphQLType,
   GraphQLScalarType,
   GraphQLEnumType,
@@ -13,7 +12,8 @@ import {
   GraphQLBoolean,
   GraphQLLeafType,
 } from 'graphql';
-import {AST, Field} from 'graphql-tool-utilities/ast';
+import {GraphQLProjectConfig} from 'graphql-config';
+import {AST, Field, Operation} from 'graphql-tool-utilities/ast';
 
 export type KeyPath = string;
 
@@ -27,6 +27,51 @@ export interface Error {
   message: string;
 }
 
+export interface GraphQLProjectOperations {
+  config: GraphQLProjectConfig;
+  ast: AST;
+}
+
+export class MissingOperationError extends Error {
+  constructor(
+    {path}: Fixture,
+    operationNames: string[],
+    projectOperationsCollection: GraphQLProjectOperations[],
+  ) {
+    super(
+      [
+        `Could not find a matching operation for '${path}'`,
+        `(looked for ${operationNames.join(', ')}).`,
+        `Make sure to put your fixture in a folder named the same as the operation,`,
+        `or add an '${OPERATION_MARKER}' key indicating the operation.`,
+        `Available operations: ${projectOperationsCollection
+          .flatMap(({ast: {operations}}) => Object.keys(operations))
+          .join(', ')}`,
+      ].join(' '),
+    );
+  }
+}
+
+export class AmbiguousOperationNameError extends Error {
+  constructor({path}: Fixture, foundOperations: FoundOperation[]) {
+    super(
+      [
+        `Ambiguous operation name found for '${path}'`,
+        `(found ${Array.from(
+          new Set(foundOperations.map(({operationName}) => operationName)),
+        ).join(', ')})`,
+        `in projects:`,
+        `${foundOperations
+          .map(({projectOperations: {config}}) => config.resolveProjectName())
+          .join(', ')}.`,
+        `Try renaming the operation in one of the projects listed and updating`,
+        `the fixture folder name or use an '${OPERATION_MARKER}' key indicating`,
+        `the new operation name.`,
+      ].join(' '),
+    );
+  }
+}
+
 export interface Validation {
   fixturePath: string;
   operationName?: string;
@@ -37,106 +82,106 @@ export interface Validation {
 
 const OPERATION_MARKER = '@operation';
 
-export function validateFixtureAgainstSchema(
-  fixture: Fixture,
-  schema: GraphQLSchema,
-): Validation {
-  const queryType = schema.getQueryType();
-  const mutationType = schema.getMutationType();
-  const {content, path} = fixture;
-
-  return {
-    fixturePath: path,
-    validationErrors: Object.keys(content).reduce((allErrors: Error[], key) => {
-      let rootType: GraphQLObjectType;
-      const keyPath = key;
-
-      if (key === OPERATION_MARKER) {
-        return allErrors;
-      }
-
-      if (queryType && objectTypeHasFieldWithName(queryType, key)) {
-        rootType = queryType;
-      } else if (
-        mutationType &&
-        objectTypeHasFieldWithName(mutationType, key)
-      ) {
-        rootType = mutationType;
-      } else {
-        return allErrors.concat([
-          error(keyPath, 'Field does not exist on query or mutation types'),
-        ]);
-      }
-
-      return allErrors.concat(
-        validateValueAgainstType(
-          content[key],
-          rootType.getFields()[key].type,
-          keyPath,
-        ),
-      );
-    }, []),
-  };
+function normalizeOperationName(operationName: string): string;
+function normalizeOperationName(
+  operationName: string | undefined,
+): string | undefined;
+function normalizeOperationName(operationName: string | undefined) {
+  return operationName
+    ? operationName.replace(/(Query|Mutation|Subscription)$/i, '')
+    : undefined;
 }
 
-function objectTypeHasFieldWithName(type: GraphQLObjectType, name: string) {
-  return type.getFields()[name] != null;
-}
-
-function normalizeOperationName(operationName: string) {
-  return operationName.replace(/(Query|Mutation|Subscription)$/i, '');
-}
-
-export function validateFixtureAgainstAST(
-  fixture: Fixture,
-  ast: AST,
-): Validation {
+export function getOperationNames(fixture: Fixture): string[] {
   const fixtureDirectoryName = basename(dirname(fixture.path));
-  const operationMarkerName = fixture.content[OPERATION_MARKER];
-  const operationName = operationMarkerName || fixtureDirectoryName;
-  const operation =
-    ast.operations[normalizeOperationName(operationName)] ||
-    ast.operations[operationName];
+  const operationMarkerName: string | undefined =
+    fixture.content[OPERATION_MARKER];
 
-  if (operation == null) {
-    let lookedFor = '';
+  return Array.from(
+    new Set([
+      fixtureDirectoryName,
+      operationMarkerName,
+      normalizeOperationName(fixtureDirectoryName),
+      normalizeOperationName(operationMarkerName),
+    ]),
+  ).filter(
+    (operationName): operationName is string =>
+      typeof operationName === 'string',
+  );
+}
 
-    if (operationMarkerName) {
-      const normalizedOperationMarkerName = normalizeOperationName(
-        operationMarkerName,
-      );
-      lookedFor = `'${operationMarkerName}'${
-        operationMarkerName === normalizedOperationMarkerName
-          ? ''
-          : ` and '${normalizedOperationMarkerName}'`
-      } based on the '${OPERATION_MARKER}' key`;
-    } else {
-      const normalizedDirectoryName = normalizeOperationName(
-        fixtureDirectoryName,
-      );
-      lookedFor = `'${fixtureDirectoryName}'${
-        fixtureDirectoryName === normalizedDirectoryName
-          ? ''
-          : ` and '${normalizedDirectoryName}'`
-      } based on the fixture’s directory name`;
-    }
+export interface FoundOperation {
+  operation: Operation;
+  operationName: string;
+  projectOperations: GraphQLProjectOperations;
+}
 
-    throw new Error(
-      [
-        `Could not find a matching operation (looked for ${lookedFor}).`,
-        `Make sure to put your fixture in a folder named the same as the operation, or add an '${OPERATION_MARKER}' key indicating the operation.`,
-        `Available operations: ${Object.keys(ast.operations).join(', ')}`,
-      ].join(' '),
+export function findOperations(
+  operationNames: string[],
+  projectOperationsCollection: GraphQLProjectOperations[],
+) {
+  return projectOperationsCollection
+    .map<FoundOperation | null>((projectOperations) => {
+      for (const operationName of operationNames) {
+        const operation = projectOperations.ast.operations[operationName];
+
+        if (operation) {
+          return {
+            operation,
+            operationName,
+            projectOperations,
+          };
+        }
+      }
+
+      return null;
+    })
+    .filter((match): match is FoundOperation => Boolean(match));
+}
+
+export function getOperationForFixture(
+  fixture: Fixture,
+  projectOperationsCollection: GraphQLProjectOperations[],
+) {
+  const operationNames = getOperationNames(fixture);
+  const operations = findOperations(
+    operationNames,
+    projectOperationsCollection,
+  );
+
+  if (operations.length === 0) {
+    throw new MissingOperationError(
+      fixture,
+      operationNames,
+      projectOperationsCollection,
     );
   }
 
+  if (operations.length > 1) {
+    throw new AmbiguousOperationNameError(fixture, operations);
+  }
+
+  return operations[0];
+}
+
+export interface FixtureOperation {
+  fixture: Fixture;
+  operation: Operation;
+  operationName: string;
+}
+
+export function validateFixture(
+  fixture: Fixture,
+  ast: AST,
+  operation: Operation,
+): Validation {
   const {fields = [], filePath, operationType} = operation;
   const value = {...fixture.content};
   delete value[OPERATION_MARKER];
 
   return {
     fixturePath: fixture.path,
-    operationName,
+    operationName: operation.operationName,
     operationType,
     operationPath: filePath === 'GraphQL request' ? undefined : filePath,
     validationErrors: fields.reduce((allErrors: Error[], field) => {

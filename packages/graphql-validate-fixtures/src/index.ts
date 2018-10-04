@@ -1,68 +1,66 @@
 import {readFile, readJSON} from 'fs-extra';
-import {isAbsolute, resolve} from 'path';
-import {
-  GraphQLSchema,
-  buildClientSchema,
-  Source,
-  parse,
-  concatAST,
-} from 'graphql';
+import {resolve} from 'path';
+import * as glob from 'glob';
+import {Source, parse, concatAST, GraphQLSchema} from 'graphql';
+import {getGraphQLConfig, GraphQLProjectConfig} from 'graphql-config';
 import {compile} from 'graphql-tool-utilities/ast';
+import {
+  getGraphQLFilePath,
+  getGraphQLProjects,
+} from 'graphql-tool-utilities/config';
 
 import {
-  validateFixtureAgainstAST,
-  validateFixtureAgainstSchema,
-  Validation,
   Fixture,
+  Validation,
+  validateFixture,
+  getOperationForFixture,
+  MissingOperationError,
+  AmbiguousOperationNameError,
+  GraphQLProjectOperations,
 } from './validate';
 
-export interface Paths {
-  fixturePaths: string[];
-  operationPaths?: string[];
-  schemaPath: string;
-}
-
 export interface Options {
-  schemaOnly?: boolean;
+  cwd: string;
 }
 
 export interface Evaluation extends Validation {
-  fixturePath: string;
   scriptError?: Error;
 }
 
 export async function evaluateFixtures(
-  {fixturePaths, operationPaths = [], schemaPath}: Paths,
-  {schemaOnly = false}: Options = {},
+  fixturePaths: string[],
+  {cwd}: Options,
 ): Promise<Evaluation[]> {
-  let schema: GraphQLSchema;
+  const config = getGraphQLConfig(resolve(cwd));
 
-  try {
-    const schemaJSON = await readJSON(schemaPath, {encoding: 'utf8'});
-    schema = buildClientSchema(schemaJSON.data);
-  } catch (error) {
-    throw new Error(
-      `Error parsing '${schemaPath}':\n\n${error.message.replace(
-        /Syntax Error GraphQL \(.*?\) /,
-        '',
-      )}`,
-    );
-  }
+  const projectOperationCollection = await Promise.all(
+    getGraphQLProjects(config).map(getOperationsForProject),
+  );
 
-  if (schemaOnly) {
-    return runForEachFixture(fixturePaths, (fixture) =>
-      validateFixtureAgainstSchema(fixture, schema),
-    );
-  }
+  return runForEachFixture(fixturePaths, (fixture) =>
+    evaluateFixture(fixture, projectOperationCollection),
+  );
+}
 
-  const sources = await Promise.all(
+async function getOperationsForProject(
+  projectConfig: GraphQLProjectConfig,
+): Promise<GraphQLProjectOperations> {
+  const operationPaths = projectConfig.includes
+    .map((filePath) => getGraphQLFilePath(projectConfig, filePath))
+    .reduce<string[]>((filePaths, pattern) => {
+      return filePaths.concat(glob.sync(pattern));
+    }, [])
+    .filter((operationPath) => projectConfig.includesFile(operationPath));
+
+  const operationSources = await Promise.all(
     operationPaths.map(
       async (operationPath) =>
         new Source(await readFile(operationPath, 'utf8'), operationPath),
     ),
   );
+
   const document = concatAST(
-    sources.map((source) => {
+    operationSources.map((source) => {
       try {
         return parse(source);
       } catch (error) {
@@ -75,11 +73,24 @@ export async function evaluateFixtures(
       }
     }),
   );
-  const ast = compile(schema, document);
 
-  return runForEachFixture(fixturePaths, (fixture) =>
-    validateFixtureAgainstAST(fixture, ast),
-  );
+  let schema: GraphQLSchema;
+
+  try {
+    schema = projectConfig.getSchema();
+  } catch (error) {
+    throw new Error(
+      `Error parsing '${projectConfig.schemaPath}':\n\n${error.message.replace(
+        /Syntax Error.*?\(.*?\) /,
+        '',
+      )}`,
+    );
+  }
+
+  return {
+    ast: compile(schema, document),
+    config: projectConfig,
+  };
 }
 
 function runForEachFixture<T extends Partial<Evaluation>>(
@@ -88,23 +99,45 @@ function runForEachFixture<T extends Partial<Evaluation>>(
 ): Promise<Evaluation[]> {
   return Promise.all(
     fixturePaths.map(async (fixturePath) => {
-      const finalPath = isAbsolute(fixturePath)
-        ? fixturePath
-        : resolve(fixturePath);
-
       try {
-        const fixture = await readJSON(finalPath);
+        const fixture = await readJSON(fixturePath);
         return {
-          fixturePath: finalPath,
-          ...(runner({path: finalPath, content: fixture}) as any),
+          fixturePath,
+          ...(runner({path: fixturePath, content: fixture}) as any),
         };
       } catch (error) {
         return {
-          fixturePath: finalPath,
+          fixturePath,
           scriptError: error,
           validationErrors: [],
         };
       }
     }),
   );
+}
+
+function evaluateFixture(
+  fixture: Fixture,
+  projectOperationsCollection: GraphQLProjectOperations[],
+): Evaluation {
+  try {
+    const {
+      operation,
+      projectOperations: {ast},
+    } = getOperationForFixture(fixture, projectOperationsCollection);
+
+    return validateFixture(fixture, ast, operation);
+  } catch (error) {
+    if (
+      error instanceof MissingOperationError ||
+      error instanceof AmbiguousOperationNameError
+    ) {
+      return {
+        fixturePath: fixture.path,
+        validationErrors: [error],
+      };
+    }
+
+    throw error;
+  }
 }
