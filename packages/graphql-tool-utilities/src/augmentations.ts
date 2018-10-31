@@ -1,4 +1,7 @@
-import {existsSync} from 'fs';
+import {existsSync, readFileSync} from 'fs';
+import {extname} from 'path';
+import {parse, print} from 'graphql';
+import * as graphqlImport from 'graphql-import';
 import {GraphQLProjectConfig} from 'graphql-config/lib/GraphQLProjectConfig';
 
 declare module 'graphql-config/lib/GraphQLProjectConfig' {
@@ -63,3 +66,26 @@ GraphQLProjectConfig.prototype.resolvePathRelativeToConfig =
 
 GraphQLProjectConfig.prototype.resolveProjectName = resolveProjectName;
 GraphQLProjectConfig.prototype.resolveSchemaPath = resolveSchemaPath;
+
+// temporary patch until graphql-import fixes schema definition imports
+// see: https://github.com/prisma/graphql-import/issues/190
+const importSchema = graphqlImport.importSchema;
+export function importSchemaPatched(path: string, schemas?: any): string {
+  const imported = importSchema(path, schemas);
+
+  if (extname(path) === '.graphql') {
+    // if we're importing an SDL schema file then check to see if we need to
+    // inject a schema definition at the top
+    const parsed = parse(readFileSync(path).toString());
+    const definitions = parsed.definitions.filter(
+      ({kind}) => kind === 'SchemaDefinition',
+    );
+
+    if (definitions.length) {
+      return `${print({...parsed, definitions})} ${imported}`;
+    }
+  }
+
+  return imported;
+}
+(graphqlImport as any).importSchema = importSchemaPatched;

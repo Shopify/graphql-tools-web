@@ -1,3 +1,4 @@
+import {print, parse} from 'graphql';
 import {GraphQLConfigData, GraphQLProjectConfig} from 'graphql-config';
 import {join} from 'path';
 import {defaultGraphQLProjectName} from '../src/augmentations';
@@ -5,14 +6,21 @@ import {defaultGraphQLProjectName} from '../src/augmentations';
 jest.mock('fs', () => {
   return {
     existsSync: jest.fn(),
+    readFileSync: jest.fn(),
   };
 });
 
 const existsSync: jest.Mock = require.requireMock('fs').existsSync;
+const readFileSync: jest.Mock = require.requireMock('fs').readFileSync;
+
+const configData: GraphQLConfigData = {schemaPath: 'test.graphql'};
+const configPath = join(__dirname, '.graphqlconfig');
 
 describe('GraphQLProjectConfig', () => {
-  const configData: GraphQLConfigData = {schemaPath: 'test'};
-  const configPath = join(__dirname, '.graphqlconfig');
+  beforeEach(() => {
+    existsSync.mockClear();
+    readFileSync.mockClear();
+  });
 
   describe('resolvePathRelativeToConfig()', () => {
     it('aliases foo', () => {
@@ -118,6 +126,24 @@ describe('GraphQLProjectConfig', () => {
       expect(projectConfig.resolveSchemaPath(true)).toBe(
         join(__dirname, configData.schemaPath),
       );
+    });
+  });
+});
+
+describe('graphql-import', () => {
+  describe('importSchema', () => {
+    it('imports SDL schemas with a schema definition', () => {
+      const sdl = 'schema { query: QueryRoot } type QueryRoot { foo: String }';
+      const projectConfig = new GraphQLProjectConfig(configData, configPath);
+
+      readFileSync.mockImplementation(() => sdl);
+
+      expect(print(parse(projectConfig.getSchemaSDL()))).toEqual(
+        print(parse(sdl)),
+      );
+      expect(projectConfig.getSchema().getQueryType()).toMatchObject({
+        name: 'QueryRoot',
+      });
     });
   });
 });
