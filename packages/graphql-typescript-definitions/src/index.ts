@@ -357,7 +357,8 @@ export class Builder extends EventEmitter {
   ) {
     try {
       return printDocument(file, ast, {
-        ...this.options,
+        enumFormat: this.options.enumFormat,
+        addTypename: this.options.addTypename,
         schemaTypesPath: getSchemaTypesPath(projectConfig, this.options),
       });
     } catch ({message}) {
