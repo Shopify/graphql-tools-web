@@ -108,7 +108,7 @@ describe('printSchema()', () => {
     );
   });
 
-  it.only('prints a custom scalar with a specified import type in the index file', () => {
+  it('prints a custom scalar with a specified import type in the index file', () => {
     const schema = buildSchema(`
       scalar HtmlSafeString
     `);
@@ -131,7 +131,7 @@ describe('printSchema()', () => {
     `);
   });
 
-  it.only('uses a different name for a custom import type when it is defined for multiple scalars', () => {
+  it('uses a different name for a custom import type when it is defined for multiple scalars', () => {
     const schema = buildSchema(`
       scalar HtmlSafeString
       scalar FormattedString
