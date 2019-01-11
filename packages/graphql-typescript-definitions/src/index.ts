@@ -28,14 +28,18 @@ import {
   Operation,
 } from 'graphql-tool-utilities';
 
-import {printDocument, generateSchemaTypes} from './print';
+import {
+  printDocument,
+  generateSchemaTypes,
+  PrintDocumentOptions,
+  PrintSchemaOptions,
+} from './print';
 import {EnumFormat} from './types';
 
 export {EnumFormat};
 
-export interface Options {
+export interface Options extends PrintDocumentOptions, PrintSchemaOptions {
   addTypename: boolean;
-  enumFormat?: EnumFormat;
   schemaTypesPath: string;
 }
 
