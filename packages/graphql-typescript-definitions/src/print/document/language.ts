@@ -165,7 +165,7 @@ function tsTypeForObjectField(
       null,
       null,
       tsInterfaceBodyForObjectField(
-        {...field, fields: []},
+        {fields: []},
         [],
         otherStack,
         context,
