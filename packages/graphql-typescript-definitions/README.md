@@ -234,7 +234,7 @@ graphql-typescript-definitions --cwd src --schema-types-path app/graphql/types
 
 #### `--custom-scalars`
 
-By default, all custom scalars are exported as an alias for `string`. You can export a different type for these scalars by passing in a `--custom-scalars` option. This option is a JSON-serialized object that specifies how custom type to import from a package and re-export as the type for that scalar. For example, assuming the following schema:
+By default, all custom scalars are exported as an alias for `string`. You can export a different type for these scalars by passing in a `--custom-scalars` option. This option is a JSON-serialized object that specifies what custom type to import from a package and re-export as the type for that scalar. For example, assuming the following schema:
 
 ```graphql
 scalar HtmlString
