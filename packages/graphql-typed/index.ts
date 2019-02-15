@@ -7,8 +7,11 @@ import {
 
 // @ts-ignore
 export interface GraphQLOperation<
+  // @ts-ignore
   Data = {},
+  // @ts-ignore
   Variables = {},
+  // @ts-ignore
   DeepPartial = {}
 > {}
 
