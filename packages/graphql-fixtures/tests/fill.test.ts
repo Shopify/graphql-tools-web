@@ -1,6 +1,6 @@
 import faker from 'faker';
 import {buildSchema} from 'graphql';
-import {parse} from 'graphql-typed';
+import {parse, DocumentNode} from 'graphql-typed';
 
 import {createFiller, list, Options} from '../src/fill';
 
@@ -556,48 +556,6 @@ describe('createFiller()', () => {
             type: 'Person',
           },
         });
-      });
-
-      it('does not add a typename when the option is falsy', () => {
-        const fill = createFillerForBasicObjectSchema();
-
-        const document = createDocument(`
-          query Details {
-            self {
-              name
-            }
-          }
-        `);
-
-        expect(fill(document)).not.toHaveProperty('self.__typename');
-      });
-
-      it('adds an explicit typename when the option is truthy', () => {
-        const fill = createFillerForBasicObjectSchema({addTypename: true});
-
-        const document = createDocument(`
-          query Details {
-            self {
-              name
-            }
-          }
-        `);
-
-        expect(fill(document)).toHaveProperty('self.__typename', 'Person');
-      });
-
-      it('adds an explicit typename field when it is requested with a different responseName', () => {
-        const fill = createFillerForBasicObjectSchema({addTypename: true});
-
-        const document = createDocument(`
-          query Details {
-            self {
-              type: __typename
-            }
-          }
-        `);
-
-        expect(fill(document)).toHaveProperty('self.__typename', 'Person');
       });
     });
 
@@ -1304,7 +1262,14 @@ describe('createFiller()', () => {
 });
 
 function createFillerForSchema(schema: string, options?: Options) {
-  return createFiller(buildSchema(schema), options);
+  const filler = createFiller(buildSchema(schema), options);
+  return <Data, Variables, PartialData>(
+    document: DocumentNode<Data, Variables, PartialData>,
+    data?: any,
+  ) =>
+    filler<Data, Variables, PartialData>(document, data)({
+      query: document,
+    });
 }
 
 function createDocument<Data = {}, PartialData = {}>(source: string) {
