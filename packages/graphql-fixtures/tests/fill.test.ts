@@ -588,7 +588,11 @@ describe('createFiller()', () => {
       }
 
       function createFillerForInterfaceSchema(options?: Options) {
-        return createFiller(createInterfaceSchema(), options);
+        const filler = createFiller(createInterfaceSchema(), options);
+        return (document: DocumentNode, data?: any) =>
+          filler(document, data)({
+            query: document,
+          });
       }
 
       it('picks a random implementing type', () => {
@@ -750,7 +754,10 @@ describe('createFiller()', () => {
           }
         `);
 
-        fill(document, {namedPerson: {__typename: 'Person'}});
+        fill(document, {namedPerson: {__typename: 'Person'}})({
+          query: document,
+        });
+
         expect(spy).toHaveBeenCalledWith({
           type: schema.getType('Person'),
           parent: schema.getQueryType(),
@@ -780,7 +787,7 @@ describe('createFiller()', () => {
 
     describe('unions', () => {
       function createFillerForUnionSchema(options?: Options) {
-        return createFiller(
+        const fill = createFiller(
           buildSchema(`
             type Person {
               name: String!
@@ -805,6 +812,9 @@ describe('createFiller()', () => {
           `),
           options,
         );
+
+        return (document: DocumentNode, data?: any) =>
+          fill(document, data)({query: document});
       }
 
       it('picks a random member type', () => {
@@ -1038,7 +1048,7 @@ describe('createFiller()', () => {
           }
         `);
 
-        fill(document);
+        fill(document)({query: document});
 
         expect(personResolver).toHaveBeenCalledWith({
           type: schema.getType('Person'),
