@@ -1277,11 +1277,11 @@ describe('createFiller()', () => {
 
 function createFillerForSchema(schema: string, options?: Options) {
   const filler = createFiller(buildSchema(schema), options);
-  return <Data, Variables, PartialData>(
-    document: DocumentNode<Data, Variables, PartialData>,
+  return <Data, PartialData>(
+    document: DocumentNode<Data, {}, PartialData>,
     data?: any,
   ) =>
-    filler<Data, Variables, PartialData>(document, data)({
+    filler<Data, {}, PartialData>(document, data)({
       query: document,
     });
 }
