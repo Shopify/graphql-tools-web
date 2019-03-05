@@ -1983,9 +1983,9 @@ function print(
   const ast = compile(schema, concatAST([document, ...fragmentDocuments]));
   const file = {
     path: filename,
-    operation: Object.keys(ast.operations)
+    operations: Object.keys(ast.operations)
       .map((key) => ast.operations[key])
-      .filter((operation) => operation.filePath === filename)[0],
+      .filter((operation) => operation.filePath === filename),
     fragments: Object.keys(ast.fragments)
       .map((key) => ast.fragments[key])
       .filter((fragment) => fragment.filePath === filename),

@@ -59,7 +59,7 @@ export interface SchemaBuild {
 export interface DocumentBuild {
   documentPath: string;
   definitionPath: string;
-  operation?: Operation;
+  operations: Operation[];
   fragments: Fragment[];
 }
 
@@ -345,7 +345,7 @@ export class Builder extends EventEmitter {
     this.emit('build:docs', {
       documentPath: file.path,
       definitionPath,
-      operation: file.operation,
+      operations: file.operations,
       fragments: file.fragments,
     });
   }
@@ -434,7 +434,7 @@ function getSchemaTypesPath(
 
 interface File {
   path: string;
-  operation?: Operation;
+  operations: Operation[];
   fragments: Fragment[];
 }
 
@@ -451,7 +451,7 @@ function groupOperationsAndFragmentsByFile({operations, fragments}: AST) {
       if (!file) {
         file = {
           path: item.filePath,
-          operation: undefined,
+          operations: [],
           fragments: [],
         };
 
@@ -459,7 +459,7 @@ function groupOperationsAndFragmentsByFile({operations, fragments}: AST) {
       }
 
       if (isOperation(item)) {
-        file.operation = item;
+        file.operations.push(item);
       } else {
         file.fragments.push(item);
       }
