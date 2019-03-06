@@ -33,15 +33,6 @@ export function printDocument(
   const fileBody: t.Statement[] = [];
 
   if (operations.length > 0) {
-    const baseDocumentNodeImport = t.importDeclaration(
-      [
-        t.importSpecifier(
-          t.identifier('BaseDocumentNode'),
-          t.identifier('DocumentNode'),
-        ),
-      ],
-      t.stringLiteral('graphql'),
-    );
     const documentNodeImport = t.importDeclaration(
       [
         t.importSpecifier(
@@ -52,27 +43,7 @@ export function printDocument(
       t.stringLiteral('graphql-typed'),
     );
 
-    const baseDocumentNodeDeclaratorIdentifier = t.identifier('document');
-    baseDocumentNodeDeclaratorIdentifier.typeAnnotation = t.tsTypeAnnotation(
-      t.tsTypeReference(t.identifier('BaseDocumentNode')),
-    );
-
-    const baseDocumentNodeDeclaration = t.variableDeclaration('const', [
-      t.variableDeclarator(baseDocumentNodeDeclaratorIdentifier),
-    ]);
-
-    baseDocumentNodeDeclaration.declare = true;
-
-    const documentNodeExport = t.exportDefaultDeclaration(
-      baseDocumentNodeDeclaratorIdentifier,
-    );
-
-    fileBody.push(
-      baseDocumentNodeImport,
-      documentNodeImport,
-      baseDocumentNodeDeclaration,
-      documentNodeExport,
-    );
+    fileBody.push(documentNodeImport);
   }
 
   for (const fragment of fragments) {
@@ -188,6 +159,42 @@ export function printDocument(
       t.exportNamedDeclaration(operationInterface, []),
       t.exportNamedDeclaration(documentNodeDeclaration, []),
     );
+
+    if (operations.length === 1) {
+      fileBody.push(
+        t.exportDefaultDeclaration(documentNodeDeclaratorIdentifier),
+      );
+    }
+  }
+
+  if (operations.length > 1) {
+    const baseDocumentNodeImport = t.importDeclaration(
+      [
+        t.importSpecifier(
+          t.identifier('BaseDocumentNode'),
+          t.identifier('DocumentNode'),
+        ),
+      ],
+      t.stringLiteral('graphql'),
+    );
+
+    const baseDocumentNodeDeclaratorIdentifier = t.identifier('document');
+    baseDocumentNodeDeclaratorIdentifier.typeAnnotation = t.tsTypeAnnotation(
+      t.tsTypeReference(t.identifier('BaseDocumentNode')),
+    );
+
+    const baseDocumentNodeDeclaration = t.variableDeclaration('const', [
+      t.variableDeclarator(baseDocumentNodeDeclaratorIdentifier),
+    ]);
+
+    baseDocumentNodeDeclaration.declare = true;
+
+    const baseDocumentNodeExport = t.exportDefaultDeclaration(
+      baseDocumentNodeDeclaratorIdentifier,
+    );
+
+    fileBody.unshift(baseDocumentNodeImport);
+    fileBody.push(baseDocumentNodeDeclaration, baseDocumentNodeExport);
   }
 
   const {schemaImports} = file;
