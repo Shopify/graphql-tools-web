@@ -1372,7 +1372,7 @@ describe('printDocument()', () => {
           schema,
         ),
       ).toContain(stripIndent`
-        declare const document: DocumentNode<DetailsQueryData, DetailsQueryData.Variables, DetailsQueryPartialData>;
+        declare const Details: DocumentNode<DetailsQueryData, DetailsQueryData.Variables, DetailsQueryPartialData>;
       `);
     });
   });
@@ -1443,6 +1443,32 @@ describe('printDocument()', () => {
 
       expect(print('query Details { name }', schema)).toContain(stripIndent`
         export interface DetailsQueryData {
+          name: string;
+        }
+      `);
+    });
+
+    it('prints multiple query types ', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      const printed = print(
+        `
+        query Details1 { name }
+        query Details2 { name }
+        `,
+        schema,
+      );
+      expect(printed).toContain(stripIndent`
+        export interface Details1QueryData {
+          name: string;
+        }
+      `);
+      expect(printed).toContain(stripIndent`
+        export interface Details2QueryData {
           name: string;
         }
       `);
@@ -1551,7 +1577,7 @@ describe('printDocument()', () => {
   });
 
   describe('fragment', () => {
-    it('does not explicitly print a fragment when there is an operation', () => {
+    it('prints a fragment when there is an operation', () => {
       const schema = buildSchema(`
         type Person {
           name: String!
@@ -1575,7 +1601,7 @@ describe('printDocument()', () => {
           `,
           schema,
         ),
-      ).not.toContain('export interface SelfDetailsFragmentData');
+      ).toContain('export interface SelfDetailsFragmentData');
     });
 
     it('prints a simple fragment', () => {
@@ -1756,6 +1782,26 @@ describe('printDocument()', () => {
       );
     });
 
+    it('imports DocumentNode from graphql when there is more than one query', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(
+        print(
+          `
+          query Details1 { name }
+          query Details2 { name }
+          `,
+          schema,
+        ),
+      ).toContain(
+        'import { DocumentNode as BaseDocumentNode } from "graphql";',
+      );
+    });
+
     it('exports a DocumentNode as the default export with the operation data type annotation', () => {
       const schema = buildSchema(`
         type Query {
@@ -1764,7 +1810,63 @@ describe('printDocument()', () => {
       `);
 
       expect(print('query Details { name }', schema)).toContain(stripIndent`
-        declare const document: DocumentNode<DetailsQueryData, never, DetailsQueryPartialData>;
+        export declare const Details: DocumentNode<DetailsQueryData, never, DetailsQueryPartialData>;
+        export default Details;
+      `);
+    });
+
+    it('exports a DocumentNode as a named export with the operation data type annotation', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(print('query Details { name }', schema)).toContain(stripIndent`
+        export declare const Details: DocumentNode<DetailsQueryData, never, DetailsQueryPartialData>;
+        export default Details;
+      `);
+    });
+
+    it('exports more than one DocumentNode as a named export with the operation data type annotation', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      const printed = print(
+        `
+        query Details1 { name }
+        query Details2 { name }
+        `,
+        schema,
+      );
+      expect(printed).toContain(stripIndent`
+        export declare const Details1: DocumentNode<Details1QueryData, never, Details1QueryPartialData>;
+      `);
+      expect(printed).toContain(stripIndent`
+        export declare const Details2: DocumentNode<Details2QueryData, never, Details2QueryPartialData>;
+      `);
+    });
+
+    it('exports an untyped DocumentNode as the default export when there is more than one query', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(
+        print(
+          `
+          query Details1 { name }
+          query Details2 { name }
+          `,
+          schema,
+        ),
+      ).toContain(stripIndent`
+        declare const document: BaseDocumentNode;
         export default document;
       `);
     });
