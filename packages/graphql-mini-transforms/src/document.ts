@@ -227,7 +227,7 @@ function stripLoc(value: unknown) {
     }
 
     for (const key of Object.keys(value)) {
-      stripLoc(value[key]);
+      stripLoc((value as any)[key]);
     }
   }
 }
