@@ -3,7 +3,7 @@
   "description": "A collection of utilities for GraphQL used in web projects at Shopify",
   "private": true,
   "engines": {
-    "node": ">=v8.9.4",
+    "node": ">=v10.15.3",
     "yarn": ">=1.9.4"
   },
   "author": "Shopify Inc.",
@@ -58,12 +58,12 @@
     "eslint-plugin-shopify": "^22.0.0",
     "graphql": "^14.0.0",
     "in-publish": "^2.0.0",
-    "jest": "^22.4.3",
-    "jest-extended": "^0.7.2",
+    "jest": "^24.7.1",
+    "jest-extended": "^0.11.1",
     "lerna": "^2.11.0",
     "prettier": "^1.12.1",
-    "ts-jest": "22.4.4",
-    "typescript": "2.8.3"
+    "ts-jest": "24.0.1",
+    "typescript": "3.4.1"
   },
   "dependencies": {
     "fs-extra": "^6.0.1"
