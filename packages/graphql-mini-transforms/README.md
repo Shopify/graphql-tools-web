@@ -17,3 +17,8 @@ yarn add graphql-mini-transforms --dev
 ## Usage
 
 coming soon
+
+## Prior art
+
+https://github.com/apollographql/graphql-tag
+https://github.com/samsarahq/graphql-loader
