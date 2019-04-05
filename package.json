@@ -25,7 +25,12 @@
       "plugin:shopify/typescript-prettier",
       "plugin:shopify/jest",
       "plugin:shopify/node"
-    ]
+    ],
+    "rules": {
+      "shopify/jest/no-snapshots": "off",
+      "shopify/jest/no-vague-titles": "off",
+      "node/no-unsupported-features/node-builtins": "off"
+    }
   },
   "scripts": {
     "clean": "rm -rf './packages/**/*.{js,d.ts}'",
@@ -36,7 +41,7 @@
     "pretest": "node scripts/introspection.js && lerna run pretest",
     "test": "jest --config ./config/jest/config.json",
     "test:watch": "yarn test --watch",
-    "lint:scripts": "eslint './**/*.ts' --format codeframe --cache true --max-warnings 0",
+    "lint:scripts": "eslint './**/*.ts' --ext .ts --format codeframe --max-warnings 0",
     "lint:json": "prettier './**/*.json' --list-different",
     "lint:graphql": "prettier './**/*.{graphql,gql}' --list-different",
     "lint": "yarn lint:scripts && yarn lint:json && yarn lint:graphql",
@@ -54,8 +59,8 @@
     "@types/jest": "^22.2.3",
     "@types/node": "^10.0.4",
     "@types/yargs": "^11.0.0",
-    "eslint": "^4.19.1",
-    "eslint-plugin-shopify": "^22.0.0",
+    "eslint": "^5.6.0",
+    "eslint-plugin-shopify": "^26.3.0",
     "graphql": "^14.0.0",
     "in-publish": "^2.0.0",
     "jest": "^24.7.1",
