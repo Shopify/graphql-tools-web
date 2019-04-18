@@ -1,5 +1,6 @@
 **/*.d.ts
 **/package.json
+packages/graphql-tool-utilities/dist/**/*
 packages/graphql-typescript-definitions/test/fixtures/malformed-query/**/*.graphql
 packages/graphql-typescript-definitions/test/fixtures/**/schema.ts
 packages/graphql-validate-fixtures/test/fixtures/malformed-query/**/*.graphql

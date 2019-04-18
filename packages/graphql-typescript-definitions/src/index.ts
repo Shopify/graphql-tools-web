@@ -27,7 +27,7 @@ import {
   isOperation,
   Operation,
   resolvePathRelativeToConfig,
-} from 'graphql-tool-utilities';
+} from 'graphql-tool-utilities/node';
 
 import {
   printDocument,

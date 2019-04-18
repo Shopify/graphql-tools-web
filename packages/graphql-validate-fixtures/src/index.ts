@@ -6,7 +6,7 @@ import {
   compile,
   getGraphQLProjectIncludedFilePaths,
   getGraphQLProjects,
-} from 'graphql-tool-utilities';
+} from 'graphql-tool-utilities/node';
 
 import {
   Fixture,

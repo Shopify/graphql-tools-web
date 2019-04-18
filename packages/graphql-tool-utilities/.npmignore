@@ -1,3 +1,5 @@
+dist
+node.ts
 src
 test
 tsconfig.json

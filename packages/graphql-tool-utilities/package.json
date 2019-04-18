@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "postbuild": "cp dist/* .",
     "pretest": "yarn build",
     "prepublishOnly": "yarn build"
   },
