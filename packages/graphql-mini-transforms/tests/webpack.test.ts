@@ -140,8 +140,8 @@ describe('graphql-mini-transforms/webpack', () => {
       const context = '/app/';
 
       const fragmentFiles = new Map([
-        ['./FooFragment.graphql', 'fragment FooFragment on Shop { id }'],
-        ['./BarFragment.graphql', 'fragment BarFragment on Shop { name }'],
+        ['/app/FooFragment.graphql', 'fragment FooFragment on Shop { id }'],
+        ['/app/BarFragment.graphql', 'fragment BarFragment on Shop { name }'],
       ]);
 
       const loader = createLoaderContext({
@@ -224,10 +224,11 @@ function createLoaderContext({
         file: string,
         withFile: (error: Error | null, result?: string | Buffer) => void,
       ) {
+        console.log(file);
         const read = readFile(file);
 
         if (typeof read === 'string') {
-          withFile(null, new Buffer(read));
+          withFile(null, Buffer.from(read, 'utf8'));
         } else {
           withFile(read);
         }
