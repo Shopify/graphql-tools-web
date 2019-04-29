@@ -146,7 +146,6 @@ describe('graphql-mini-transforms/webpack', () => {
 
       const loader = createLoaderContext({
         context,
-        // eslint-disable-next-line typescript/no-non-null-assertion
         readFile: (file) => fragmentFiles.get(file)!,
       });
 
@@ -224,7 +223,6 @@ function createLoaderContext({
         file: string,
         withFile: (error: Error | null, result?: string | Buffer) => void,
       ) {
-        console.log(file);
         const read = readFile(file);
 
         if (typeof read === 'string') {
