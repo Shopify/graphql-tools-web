@@ -146,7 +146,8 @@ describe('graphql-mini-transforms/webpack', () => {
 
       const loader = createLoaderContext({
         context,
-        readFile: (file) => fragmentFiles.get(file),
+        // eslint-disable-next-line typescript/no-non-null-assertion
+        readFile: (file) => fragmentFiles.get(file)!,
       });
 
       const {
