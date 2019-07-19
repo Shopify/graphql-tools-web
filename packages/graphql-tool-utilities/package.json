@@ -2,8 +2,9 @@
   "name": "graphql-tool-utilities",
   "description": "Common utilities for GraphQL developer tools",
   "version": "1.0.0",
-  "types": "lib",
-  "main": "lib/index.js",
+  "main": "index",
+  "types": "build/tsc",
+  "module": "build/esm",
   "license": "MIT",
   "publishConfig": {
     "access": "public",

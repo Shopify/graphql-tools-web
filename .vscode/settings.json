@@ -15,13 +15,7 @@
     "**/.svn": true,
     "**/.hg": true,
     "**/CVS": true,
-    "**/.DS_Store": true,
-    "**/node_modules": true,
-    "**/lib": true,
-    "packages/graphql-tool-utilities/*.js": true,
-    "packages/graphql-tool-utilities/*.d.ts": true,
-    "packages/graphql-typed/*.js": true,
-    "packages/graphql-typed/*.d.ts": true
+    "**/.DS_Store": true
   },
   "jest.pathToConfig": "config/jest/config.json",
   "search.exclude": {

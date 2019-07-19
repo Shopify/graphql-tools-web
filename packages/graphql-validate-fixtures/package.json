@@ -2,7 +2,9 @@
   "name": "graphql-validate-fixtures",
   "description": "Validates JSON fixtures for GraphQL responses against the associated operations and schema",
   "version": "0.11.2",
-  "main": "lib/index.js",
+  "main": "index",
+  "types": "build/tsc",
+  "module": "build/esm",
   "license": "MIT",
   "publishConfig": {
     "access": "public",

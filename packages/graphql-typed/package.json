@@ -2,7 +2,9 @@
   "name": "graphql-typed",
   "version": "0.4.1",
   "description": "A more strongly typed version of GraphQL's DocumentNode.",
-  "main": "index.js",
+  "main": "index",
+  "types": "build/tsc",
+  "module": "build/esm",
   "license": "MIT",
   "publishConfig": {
     "access": "public",

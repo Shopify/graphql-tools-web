@@ -1,8 +1,9 @@
 {
   "name": "graphql-typescript-definitions",
   "version": "0.17.2",
-  "main": "lib/index.js",
-  "types": "lib",
+  "main": "index",
+  "types": "build/tsc",
+  "module": "build/esm",
   "description": "Generate TypeScript definition files from .graphql documents",
   "license": "MIT",
   "publishConfig": {

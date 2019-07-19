@@ -4,7 +4,7 @@ import {GraphQLConfig, GraphQLProjectConfig} from 'graphql-config';
 
 // we need to use an import/require here because it does not force consumers to
 // enable esModuleInterop in tsconfig.json
-import glob = require('glob');
+import glob from 'glob';
 
 export const defaultGraphQLProjectName = 'GraphQL';
 

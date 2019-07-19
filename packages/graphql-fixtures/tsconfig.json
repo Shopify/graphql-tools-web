@@ -1,11 +1,13 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../config/typescript/tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
+    "outDir": "build/tsc",
     "baseUrl": "src",
-    "declaration": true,
-    "outDir": "lib"
+    "rootDir": "src"
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["./tests/**", "./lib/**", "node_modules/**"]
+  "include": ["src/**/*.ts"],
+  "references": [
+    {"path": "../graphql-tool-utilities"},
+    {"path": "../graphql-typed"}
+  ]
 }
