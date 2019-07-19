@@ -40,7 +40,7 @@
     }
   },
   "scripts": {
-    "build": "tsc --build && sk",
+    "build": "tsc --build && sk build",
     "bootstrap": "lerna bootstrap",
     "type-check": "tsc --noEmit",
     "pretest": "node scripts/introspection.js",
