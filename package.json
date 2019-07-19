@@ -40,9 +40,7 @@
     }
   },
   "scripts": {
-    "clean": "rm -rf './packages/**/*.{js,d.ts}'",
-    "prebuild": "yarn run clean",
-    "build": "sk",
+    "build": "tsc --build && sk",
     "bootstrap": "lerna bootstrap",
     "type-check": "tsc --noEmit",
     "pretest": "node scripts/introspection.js && lerna run pretest",

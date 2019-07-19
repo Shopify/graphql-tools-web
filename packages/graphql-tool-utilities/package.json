@@ -23,11 +23,6 @@
     "graphql",
     "apollo"
   ],
-  "scripts": {
-    "build": "tsc",
-    "pretest": "yarn build",
-    "prepublishOnly": "yarn build"
-  },
   "dependencies": {
     "@types/graphql": "^14.0.0",
     "apollo-codegen-core": "0.28.1",

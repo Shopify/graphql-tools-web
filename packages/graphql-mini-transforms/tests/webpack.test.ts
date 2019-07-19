@@ -3,7 +3,7 @@ import {createHash} from 'crypto';
 import {loader} from 'webpack';
 import {stripIndent} from 'common-tags';
 
-import graphQLLoader from '../src/webpack';
+import graphQLLoader from '../src/webpack-loader';
 
 describe('graphql-mini-transforms/webpack', () => {
   it('marks the loader as cacheable', async () => {

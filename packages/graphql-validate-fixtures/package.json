@@ -23,11 +23,6 @@
     "url": "https://github.com/shopify/graphql-tools-web/issues"
   },
   "homepage": "https://github.com/shopify/graphql-tools-web/blob/master/packages/graphql-typescript-definitions",
-  "scripts": {
-    "build": "tsc",
-    "pretest": "yarn build",
-    "prepublishOnly": "yarn build"
-  },
   "dependencies": {
     "@types/graphql": "^14.0.0",
     "chalk": "^2.4.1",

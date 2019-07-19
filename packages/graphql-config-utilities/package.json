@@ -23,11 +23,6 @@
     "graphql",
     "graphql-config"
   ],
-  "scripts": {
-    "build": "tsc",
-    "pretest": "yarn build",
-    "prepublishOnly": "yarn build"
-  },
   "dependencies": {
     "graphql-config": "^2.0.0"
   }

@@ -19,10 +19,6 @@
     "url": "https://github.com/shopify/graphql-tools-web/issues"
   },
   "homepage": "https://github.com/shopify/graphql-tools-web/blob/master/packages/graphql-typed",
-  "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "yarn build"
-  },
   "peerDependencies": {
     "@types/graphql": "^14.0.0",
     "graphql": "^14.0.0"

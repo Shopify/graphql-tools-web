@@ -19,11 +19,6 @@
     "url": "https://github.com/shopify/graphql-tools-web/issues"
   },
   "homepage": "https://github.com/shopify/graphql-tools-web/blob/master/packages/graphql-fixtures",
-  "scripts": {
-    "build": "tsc",
-    "pretest": "yarn build",
-    "prepublishOnly": "yarn build"
-  },
   "dependencies": {
     "@shopify/useful-types": "^1.1.2",
     "@types/faker": "^4.1.2",
