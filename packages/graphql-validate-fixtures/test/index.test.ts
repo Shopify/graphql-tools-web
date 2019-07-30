@@ -1,6 +1,6 @@
 import {join} from 'path';
 import * as glob from 'glob';
-import {stripFullFilePaths} from '../../../test/utilities';
+import {stripFullFilePaths} from '../../../tests/utilities';
 import {evaluateFixtures, Options} from '../src';
 
 const rootFixtureDirectory = join(__dirname, 'fixtures');

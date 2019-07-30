@@ -77,6 +77,6 @@
   },
   "dependencies": {
     "fs-extra": "^6.0.1",
-    "sewing-kit-of-lemons": "^1.0.0-beta.1"
+    "sewing-kit-of-lemons": "^1.0.0-beta.9"
   }
 }
