@@ -1,2 +1,7 @@
 *.d.ts
 packages/graphql-typescript-definitions/test/fixtures/**/*.ts
+**/node_modules
+packages/*/*.js
+packages/*/*.node
+packages/*/*.esnext
+packages/*/build
