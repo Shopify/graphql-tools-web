@@ -74,13 +74,13 @@ type GraphQLDocumentMapByProject = Map<
 >;
 
 export class Builder extends EventEmitter {
-  private options: Options;
+  private readonly options: Options;
   // workspace graphql configuration
   // see: https://github.com/prisma/graphql-config
   private readonly config: GraphQLConfig;
   // projectName -> {filePath -> document}
   // NOTE: projectName can be undefined for nameless graphql-config projects
-  private documentMapByProject: GraphQLDocumentMapByProject = new Map<
+  private readonly documentMapByProject: GraphQLDocumentMapByProject = new Map<
     string | undefined,
     Map<string, DocumentNode>
   >();

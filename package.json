@@ -22,13 +22,16 @@
   "eslintConfig": {
     "extends": [
       "plugin:matt/typescript",
+      "plugin:matt/typescript-requiring-type-checking",
       "plugin:matt/react",
       "plugin:matt/jest",
       "plugin:matt/prettier"
     ],
     "rules": {
       "matt/jest/no-snapshots": "off",
-      "@typescript-eslint/ban-ts-ignore": "off"
+      "@typescript-eslint/ban-ts-ignore": "off",
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-misused-promises": "off"
     }
   },
   "scripts": {
