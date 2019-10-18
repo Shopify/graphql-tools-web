@@ -19,7 +19,7 @@ const generate = require('@babel/generator').default;
 
 export interface ScalarDefinition {
   name: string;
-  package: string;
+  package?: string;
 }
 
 export interface Options {
@@ -69,7 +69,7 @@ export function generateSchemaTypes(
       const customScalarDefinition = customScalars[type.name];
       const scalarType = tsScalarForType(type, customScalarDefinition);
 
-      if (customScalarDefinition) {
+      if (customScalarDefinition && customScalarDefinition.package) {
         fileBody.unshift(
           t.importDeclaration(
             [
@@ -148,16 +148,19 @@ function tsScalarForType(
   type: GraphQLScalarType,
   customScalarDefinition?: ScalarDefinition,
 ) {
-  const alias = customScalarDefinition
-    ? t.tsTypeReference(
-        t.identifier(
-          makeCustomScalarImportNameSafe(
-            customScalarDefinition.name,
-            type.name,
-          ),
-        ),
-      )
-    : t.tsStringKeyword();
+  let alias;
+
+  if (customScalarDefinition && customScalarDefinition.package) {
+    alias = t.tsTypeReference(
+      t.identifier(
+        makeCustomScalarImportNameSafe(customScalarDefinition.name, type.name),
+      ),
+    );
+  } else if (customScalarDefinition) {
+    alias = t.tsTypeReference(t.identifier(customScalarDefinition.name));
+  } else {
+    alias = t.tsStringKeyword();
+  }
 
   return t.tsTypeAliasDeclaration(t.identifier(type.name), null, alias);
 }
