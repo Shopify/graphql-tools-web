@@ -27,6 +27,9 @@
       "plugin:matt/jest",
       "plugin:matt/prettier"
     ],
+    "parserOptions": {
+      "project": "tsconfig.json"
+    },
     "rules": {
       "matt/jest/no-snapshots": "off",
       "@typescript-eslint/ban-ts-ignore": "off",
@@ -62,7 +65,7 @@
     "@types/node": "^10.0.4",
     "@types/yargs": "^11.0.0",
     "eslint": "^6.5.0",
-    "eslint-plugin-matt": "31.0.0-beta.3",
+    "eslint-plugin-matt": "31.0.0-beta.5",
     "graphql": "^14.0.0",
     "in-publish": "^2.0.0",
     "jest": "^24.7.1",

@@ -2234,10 +2234,10 @@ eslint-plugin-jsx-a11y@6.2.3:
     has "^1.0.3"
     jsx-ast-utils "^2.2.1"
 
-eslint-plugin-matt@31.0.0-beta.3:
-  version "31.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-matt/-/eslint-plugin-matt-31.0.0-beta.3.tgz#5722766c067c3ca37ed7a3bf2e4e9fa393ff1f1f"
-  integrity sha512-axzeD9SnJpHHnQTk906nEurGTIJRAsb/hV9jPFr9074quPP6/F+mfhZJG3fQGpLyz9i5RCC3zkHHGH6WqYkMKw==
+eslint-plugin-matt@31.0.0-beta.5:
+  version "31.0.0-beta.5"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-matt/-/eslint-plugin-matt-31.0.0-beta.5.tgz#f945f60daffe1bf6fcb51be339e3b87a1136c529"
+  integrity sha512-KflKIiQOkFntAI9z24KwVGvHcsJjK5OxYDlvJevmEUQ7XKtxb7F3WBSUK1iflqU+rvCwfPdysV8PIzTfDnFwcg==
   dependencies:
     "@typescript-eslint/eslint-plugin" "^2.3.3"
     "@typescript-eslint/parser" "^2.3.3"
