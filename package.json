@@ -3,7 +3,7 @@
   "description": "A collection of utilities for GraphQL used in web projects at Shopify",
   "private": true,
   "engines": {
-    "node": ">=v10.15.3",
+    "node": ">=v8.12.0",
     "yarn": ">=1.9.4"
   },
   "author": "Shopify Inc.",
@@ -19,24 +19,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "eslintConfig": {
-    "extends": [
-      "plugin:matt/typescript",
-      "plugin:matt/typescript-requiring-type-checking",
-      "plugin:matt/react",
-      "plugin:matt/jest",
-      "plugin:matt/prettier"
-    ],
-    "parserOptions": {
-      "project": "tsconfig.json"
-    },
-    "rules": {
-      "matt/jest/no-snapshots": "off",
-      "@typescript-eslint/ban-ts-ignore": "off",
-      "@typescript-eslint/no-unnecessary-condition": "off",
-      "@typescript-eslint/no-misused-promises": "off"
-    }
-  },
   "scripts": {
     "clean": "rm -rf './packages/**/*.{js,d.ts}'",
     "prebuild": "yarn run clean",
@@ -65,7 +47,7 @@
     "@types/node": "^10.0.4",
     "@types/yargs": "^11.0.0",
     "eslint": "^6.5.0",
-    "eslint-plugin-matt": "31.0.0-beta.5",
+    "eslint-plugin-shopify": "^31.0.0",
     "graphql": "^14.0.0",
     "in-publish": "^2.0.0",
     "jest": "^24.7.1",
