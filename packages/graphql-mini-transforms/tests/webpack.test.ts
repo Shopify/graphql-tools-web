@@ -72,6 +72,15 @@ describe('graphql-mini-transforms/webpack', () => {
     );
   });
 
+  it('outputs a fragment when it is the only definition in the document', async () => {
+    const fragment = `fragment MyShop on Shop{__typename}`;
+
+    expect(await extractDocumentExport(fragment)).toHaveProperty(
+      'loc.source.body',
+      fragment,
+    );
+  });
+
   describe('import', () => {
     it('adds the resolved import as a dependency', async () => {
       const context = '/app/';
