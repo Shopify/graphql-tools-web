@@ -9,6 +9,7 @@
     "module": "commonjs",
     "declaration": true,
     "strict": true,
+    "noEmit": true,
     "noEmitOnError": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,

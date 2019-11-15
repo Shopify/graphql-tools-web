@@ -3,7 +3,6 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "editor.formatOnSave": true,
-  "prettier.eslintIntegration": true,
   "eslint.validate": [
     "javascript",
     "javascriptreact",
