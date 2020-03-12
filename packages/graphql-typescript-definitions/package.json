@@ -1,6 +1,6 @@
 {
   "name": "graphql-typescript-definitions",
-  "version": "0.18.1",
+  "version": "1.0.0-core-js.1",
   "main": "lib/index.js",
   "types": "lib",
   "description": "Generate TypeScript definition files from .graphql documents",
@@ -44,8 +44,8 @@
     "glob": "^7.1.2",
     "graphql": "^14.0.0",
     "graphql-config": "^2.2.1",
-    "graphql-config-utilities": "^1.0.0",
-    "graphql-tool-utilities": "^1.1.0",
+    "graphql-config-utilities": "^2.0.0-core-js.1",
+    "graphql-tool-utilities": "^2.0.0-core-js.1",
     "yargs": "^14.2.0"
   },
   "peerDependencies": {
