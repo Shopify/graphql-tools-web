@@ -4,3 +4,13 @@ ci:
 dependencies:
   post:
     - yarn run build
+
+deploy:
+  override:
+    - yarn install
+    - npm dist-tag add graphql-config-utilities@1.0.0 && npm dist-tag ls graphql-config-utilities
+    - npm dist-tag add graphql-fixtures@0.8.5 && npm dist-tag ls graphql-fixtures
+    - npm dist-tag add graphql-mini-transforms@1.0.4 && npm dist-tag ls graphql-mini-transforms
+    - npm dist-tag add graphql-tool-utilities@1.1.0 && npm dist-tag ls graphql-tool-utilities
+    - npm dist-tag add graphql-typescript-definitions@0.18.1 && npm dist-tag ls graphql-typescript-definitions
+    - npm dist-tag add graphql-validate-fixtures@0.11.4 && npm dist-tag ls graphql-validate-fixtures
