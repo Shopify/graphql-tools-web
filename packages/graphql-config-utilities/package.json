@@ -28,6 +28,6 @@
     "prepublishOnly": "yarn build"
   },
   "dependencies": {
-    "graphql-config": "^2.0.0"
+    "graphql-config": "^3.0.0"
   }
 }
