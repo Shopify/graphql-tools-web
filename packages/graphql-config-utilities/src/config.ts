@@ -82,9 +82,36 @@ export function getGraphQLSchemaPaths(config: GraphQLConfig) {
   }, []);
 }
 
+/**
+ * Helper to format a string or array of strings
+ * to array of strings
+ *
+ * @param value an file path or array of paths
+ * @returns array of file paths
+ */
 function toArray(value?: string | string[]) {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+/**
+ * Get an array of include paths for a project
+ *
+ * @param projectConfig The current project config
+ * @returns Array of include paths
+ */
+export function getGraphQLProjectInclude(projectConfig: GraphQLProjectConfig) {
+  return toArray(projectConfig.include);
+}
+
+/**
+ * Get an array of exclude paths for a project
+ *
+ * @param projectConfig The current project config
+ * @returns Array of exclude paths
+ */
+export function getGraphQLProjectExclude(projectConfig: GraphQLProjectConfig) {
+  return toArray(projectConfig.include);
 }
 
 export async function getGraphQLProjectIncludedFilePaths(
@@ -92,9 +119,9 @@ export async function getGraphQLProjectIncludedFilePaths(
 ) {
   return (
     await Promise.all(
-      toArray(projectConfig.include).map((include) =>
+      getGraphQLProjectInclude(projectConfig).map((include) =>
         promisify(glob)(resolvePathRelativeToConfig(projectConfig, include), {
-          ignore: toArray(projectConfig.exclude).map((exclude) =>
+          ignore: getGraphQLProjectExclude(projectConfig).map((exclude) =>
             resolvePathRelativeToConfig(projectConfig, exclude),
           ),
         }),

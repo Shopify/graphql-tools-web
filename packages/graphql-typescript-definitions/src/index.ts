@@ -14,11 +14,13 @@ import * as chalk from 'chalk';
 import {mkdirp, readFile, writeFile} from 'fs-extra';
 import {FSWatcher, watch} from 'chokidar';
 import {
-  getGraphQLConfig,
+  loadConfigSync,
   GraphQLProjectConfig,
   GraphQLConfig,
 } from 'graphql-config';
 import {
+  getGraphQLProjectInclude,
+  getGraphQLProjectExclude,
   getGraphQLProjectIncludedFilePaths,
   getGraphQLProjectForSchemaPath,
   getGraphQLProjects,
@@ -94,7 +96,7 @@ export class Builder extends EventEmitter {
 
     this.config = options.config
       ? options.config
-      : getGraphQLConfig(cwd ? resolve(cwd) : undefined);
+      : loadConfigSync({rootDir: cwd ? resolve(cwd) : undefined});
   }
 
   once(event: 'error', handler: (error: Error) => void): this;
@@ -207,14 +209,14 @@ export class Builder extends EventEmitter {
     };
 
     return getGraphQLProjects(this.config)
-      .filter(({includes}) => includes.length > 0)
+      .filter(({include}) => include && include.length > 0)
       .map((projectConfig) => {
         return watch(
-          projectConfig.includes.map((include) =>
+          getGraphQLProjectInclude(projectConfig).map((include) =>
             resolvePathRelativeToConfig(projectConfig, include),
           ),
           {
-            ignored: projectConfig.excludes.map((exclude) =>
+            ignored: getGraphQLProjectExclude(projectConfig).map((exclude) =>
               resolvePathRelativeToConfig(projectConfig, exclude),
             ),
             ignoreInitial: true,
@@ -223,9 +225,7 @@ export class Builder extends EventEmitter {
           .on('add', (filePath: string) => update(filePath, projectConfig))
           .on('change', (filePath: string) => update(filePath, projectConfig))
           .on('unlink', async (filePath: string) => {
-            const documents = this.documentMapByProject.get(
-              projectConfig.projectName,
-            );
+            const documents = this.documentMapByProject.get(projectConfig.name);
 
             if (documents) {
               documents.delete(filePath);
@@ -263,7 +263,7 @@ export class Builder extends EventEmitter {
 
     const schemaTypesPath = getSchemaTypesPath(projectConfig, this.options);
     const definitions = generateSchemaTypes(
-      projectConfig.getSchema(),
+      await projectConfig.getSchema(),
       this.options,
     );
     await mkdirp(schemaTypesPath);
@@ -289,7 +289,7 @@ export class Builder extends EventEmitter {
         this.documentMapByProject.entries(),
       ).map(([projectName, documents]) =>
         this.generateDocumentTypesForProject(
-          this.config.getProjectConfig(projectName),
+          this.config.getProject(projectName),
           documents,
         ),
       ),
@@ -342,7 +342,7 @@ export class Builder extends EventEmitter {
 
     try {
       ast = compile(
-        projectConfig.getSchema(),
+        await projectConfig.getSchema(),
         concatAST(Array.from(documents.values())),
       );
     } catch (error) {
@@ -425,11 +425,11 @@ export class Builder extends EventEmitter {
     projectConfig: GraphQLProjectConfig,
     contents: string,
   ) {
-    let documents = this.documentMapByProject.get(projectConfig.projectName);
+    let documents = this.documentMapByProject.get(projectConfig.name);
 
     if (!documents) {
       documents = new Map<string, DocumentNode>();
-      this.documentMapByProject.set(projectConfig.projectName, documents);
+      this.documentMapByProject.set(projectConfig.name, documents);
     }
 
     if (contents.trim().length === 0) {
@@ -458,9 +458,7 @@ function getSchemaTypesPath(
     projectConfig,
     join(
       options.schemaTypesPath,
-      `${
-        projectConfig.projectName ? `${projectConfig.projectName}-` : ''
-      }types`,
+      `${projectConfig.name ? `${projectConfig.name}-` : ''}types`,
     ),
   );
 }

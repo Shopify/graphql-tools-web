@@ -1,7 +1,7 @@
 import {join} from 'path';
 
 import {buildSchema, parse, concatAST} from 'graphql';
-import {GraphQLProjectConfig} from 'graphql-config';
+import {GraphQLConfig} from 'graphql-config';
 import {AST, compile} from 'graphql-tool-utilities';
 
 import {
@@ -510,18 +510,17 @@ describe('validate', () => {
   });
 });
 
-const mockGraphQLConfig = new GraphQLProjectConfig(
-  {
-    schemaPath: '.',
-  },
-  '.',
-  'test',
+const mockGraphQLConfig = new GraphQLConfig(
+  {config: {schema: ''}, filepath: ''},
+  [],
 );
+
+const mockProjectConfig = mockGraphQLConfig.getDefault();
 
 function validateAgainstAST(fixtureContent: any, ast: AST) {
   const projectOperations: GraphQLProjectAST = {
     ast,
-    config: mockGraphQLConfig,
+    config: mockProjectConfig,
   };
   const queryName = Object.keys(ast.operations)[0];
   const fixture: Fixture = {
