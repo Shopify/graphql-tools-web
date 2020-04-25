@@ -1,9 +1,14 @@
 import {dirname} from 'path';
 
 import {loader} from 'webpack';
-import {parse, DocumentNode} from 'graphql';
+import {parse, DocumentNode, OperationDefinitionNode} from 'graphql';
+import {getOptions} from 'loader-utils';
 
 import {cleanDocument, extractImports} from './document';
+
+interface Options {
+  raw?: boolean;
+}
 
 export default async function graphQLLoader(
   this: loader.LoaderContext,
@@ -12,6 +17,7 @@ export default async function graphQLLoader(
   this.cacheable();
 
   const done = this.async();
+  const {raw = false} = getOptions(this) as Options;
 
   if (done == null) {
     throw new Error(
@@ -20,11 +26,31 @@ export default async function graphQLLoader(
   }
 
   try {
-    const document = await loadDocument(source, this.context, this);
-    done(null, `export default ${JSON.stringify(cleanDocument(document))};`);
+    const document = cleanDocument(
+      await loadDocument(source, this.context, this),
+    );
+    const exported = raw
+      ? {
+          id: (document as any).id,
+          name: operationNameForDocument(document),
+          source: document.loc?.source?.body,
+        }
+      : document;
+
+    done(
+      null,
+      `export default JSON.parse(${JSON.stringify(JSON.stringify(exported))});`,
+    );
   } catch (error) {
     done(error);
   }
+}
+
+function operationNameForDocument(document: DocumentNode) {
+  return document.definitions.find(
+    (definition): definition is OperationDefinitionNode =>
+      definition.kind === 'OperationDefinition',
+  )?.name?.value;
 }
 
 async function loadDocument(
