@@ -1,13 +1,13 @@
 import {dirname} from 'path';
 
 import {loader} from 'webpack';
-import {parse, DocumentNode, OperationDefinitionNode} from 'graphql';
+import {parse, DocumentNode} from 'graphql';
 import {getOptions} from 'loader-utils';
 
-import {cleanDocument, extractImports} from './document';
+import {cleanDocument, extractImports, toSimpleDocument} from './document';
 
 interface Options {
-  raw?: boolean;
+  simple?: boolean;
 }
 
 export default async function graphQLLoader(
@@ -17,7 +17,7 @@ export default async function graphQLLoader(
   this.cacheable();
 
   const done = this.async();
-  const {raw = false} = getOptions(this) as Options;
+  const {simple = false} = getOptions(this) as Options;
 
   if (done == null) {
     throw new Error(
@@ -29,13 +29,7 @@ export default async function graphQLLoader(
     const document = cleanDocument(
       await loadDocument(source, this.context, this),
     );
-    const exported = raw
-      ? {
-          id: (document as any).id,
-          name: operationNameForDocument(document),
-          source: document.loc?.source?.body,
-        }
-      : document;
+    const exported = simple ? toSimpleDocument(document) : document;
 
     done(
       null,
@@ -44,13 +38,6 @@ export default async function graphQLLoader(
   } catch (error) {
     done(error);
   }
-}
-
-function operationNameForDocument(document: DocumentNode) {
-  return document.definitions.find(
-    (definition): definition is OperationDefinitionNode =>
-      definition.kind === 'OperationDefinition',
-  )?.name?.value;
 }
 
 async function loadDocument(

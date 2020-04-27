@@ -201,7 +201,7 @@ describe('graphql-mini-transforms/webpack', () => {
     });
   });
 
-  describe('raw', () => {
+  describe('simple', () => {
     it('has a source property that is the minified source', async () => {
       const originalSource = stripIndent`
         # Comments should go away
@@ -221,7 +221,7 @@ describe('graphql-mini-transforms/webpack', () => {
       expect(
         await extractDocumentExport(
           originalSource,
-          createLoaderContext({query: {raw: true}}),
+          createLoaderContext({query: {simple: true}}),
         ),
       ).toHaveProperty('source', expectedSource);
     });
@@ -229,7 +229,7 @@ describe('graphql-mini-transforms/webpack', () => {
     it('has an id property that is a sha256 hash of the query document', async () => {
       const result = await extractDocumentExport(
         `query Shop { shop { id } }`,
-        createLoaderContext({query: {raw: true}}),
+        createLoaderContext({query: {simple: true}}),
       );
 
       expect(result).toHaveProperty(
@@ -241,7 +241,7 @@ describe('graphql-mini-transforms/webpack', () => {
     it('has a name property that is the name of the first operation', async () => {
       const result = await extractDocumentExport(
         `query Shop { shop { id } }`,
-        createLoaderContext({query: {raw: true}}),
+        createLoaderContext({query: {simple: true}}),
       );
 
       expect(result).toHaveProperty('name', 'Shop');
@@ -250,7 +250,7 @@ describe('graphql-mini-transforms/webpack', () => {
     it('has an undefined name when there are no named operations', async () => {
       const result = await extractDocumentExport(
         `query { shop { id } }`,
-        createLoaderContext({query: {raw: true}}),
+        createLoaderContext({query: {simple: true}}),
       );
 
       expect(result).toHaveProperty('name', undefined);
@@ -316,6 +316,8 @@ async function extractDocumentExport(
   loader = createLoaderContext(),
 ) {
   const result = await simulateRun(source, loader);
+
+  // eslint-disable-next-line no-eval
   return eval(result.replace(/^export default /, '').replace(/;$/, ''));
 }
 
