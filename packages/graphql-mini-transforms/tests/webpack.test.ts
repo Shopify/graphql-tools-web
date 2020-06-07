@@ -81,6 +81,17 @@ describe('graphql-mini-transforms/webpack', () => {
     );
   });
 
+  it('provides a useful error when a document is ambiguous', async () => {
+    const fragment = stripIndent`
+      fragment Foo on Shop{__typename}
+      fragment Bar on Shop{__typename}
+    `;
+
+    await expect(extractDocumentExport(fragment)).rejects.toThrow(
+      '@shopify/graphql-loader could not identify any used definitions in this document',
+    );
+  });
+
   describe('import', () => {
     it('adds the resolved import as a dependency', async () => {
       const context = '/app/';
