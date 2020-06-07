@@ -16,7 +16,7 @@ const DEFAULT_NAME = 'Operation';
 
 export function cleanDocument(
   document: DocumentNode,
-  {removeUnused = shouldRemoveUnusedDefinitions(document)} = {},
+  {removeUnused = true} = {},
 ) {
   if (removeUnused) {
     removeUnusedDefinitions(document);
@@ -239,8 +239,4 @@ function stripLoc(value: unknown) {
       stripLoc((value as any)[key]);
     }
   }
-}
-
-function shouldRemoveUnusedDefinitions(document: DocumentNode) {
-  return document.definitions.length > 1;
 }
