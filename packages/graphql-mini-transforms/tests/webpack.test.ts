@@ -210,6 +210,34 @@ describe('graphql-mini-transforms/webpack', () => {
 
       expect(body).not.toContain('fragment FooFragment on Shop');
     });
+
+    it('includes imported sources if a fragment is the only export', async () => {
+      const context = '/app/';
+      const loader = createLoaderContext({
+        context,
+        readFile: () => `fragment FooFragment on Shop { id }`,
+      });
+
+      const {
+        loc: {
+          source: {body},
+        },
+      } = await extractDocumentExport(
+        stripIndent`
+          #import './FooFragment.graphql';
+
+          fragment ShopFragment on Query {
+            shop {
+              ...FooFragment
+            }
+          }
+        `,
+        loader,
+      );
+
+      expect(body).toContain('fragment FooFragment on Shop');
+      expect(body).toContain('fragment ShopFragment on Query');
+    });
   });
 });
 
