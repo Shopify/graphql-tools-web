@@ -1,13 +1,15 @@
 import {relative, dirname} from 'path';
+
 import * as t from '@babel/types';
-import {ucFirst} from 'change-case';
+import {upperCaseFirst} from 'upper-case-first';
 import {AST, Fragment, isOperation, Operation} from 'graphql-tool-utilities';
 
-import {EnumFormat} from '../../types';
+import {EnumFormat, ExportFormat} from '../../types';
 
 export interface Options {
   schemaTypesPath: string;
   enumFormat?: EnumFormat;
+  exportFormat?: ExportFormat;
   addTypename?: boolean;
 }
 
@@ -35,9 +37,12 @@ export class FileContext {
       : null;
   }
 
-  private importedTypes = new Set<string>();
+  private readonly importedTypes = new Set<string>();
 
-  constructor(private path: string, private options: Options) {}
+  constructor(
+    private readonly path: string,
+    private readonly options: Options,
+  ) {}
 
   import(type: string) {
     this.importedTypes.add(type);
@@ -50,10 +55,12 @@ export class OperationContext {
 
     if (isOperation(this.operation)) {
       const {operationName, operationType} = this.operation;
-      typeName = `${ucFirst(operationName)}${ucFirst(operationType)}Data`;
+      typeName = `${upperCaseFirst(operationName)}${upperCaseFirst(
+        operationType,
+      )}Data`;
     } else {
       const {fragmentName} = this.operation;
-      typeName = `${ucFirst(fragmentName)}FragmentData`;
+      typeName = `${upperCaseFirst(fragmentName)}FragmentData`;
     }
 
     return this.options.partial
@@ -78,7 +85,7 @@ export class OperationContext {
     return this.exportedTypes;
   }
 
-  private exportedTypes: NamespaceExportableType[] = [];
+  private readonly exportedTypes: NamespaceExportableType[] = [];
 
   constructor(
     public operation: Operation | Fragment,

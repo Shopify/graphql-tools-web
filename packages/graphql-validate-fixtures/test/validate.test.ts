@@ -1,7 +1,9 @@
 import {join} from 'path';
+
 import {buildSchema, parse, concatAST} from 'graphql';
 import {GraphQLProjectConfig} from 'graphql-config';
 import {AST, compile} from 'graphql-tool-utilities';
+
 import {
   getOperationForFixture,
   validateFixture,
@@ -168,7 +170,15 @@ describe('validate', () => {
         expect(validateAgainstAST({sets: []}, ast)).toMatchSnapshot();
         expect(validateAgainstAST({sets: [1, 2, 3]}, ast)).toMatchSnapshot();
         expect(
-          validateAgainstAST({sets: [[1, 2, null], [true, {}, 3]]}, ast),
+          validateAgainstAST(
+            {
+              sets: [
+                [1, 2, null],
+                [true, {}, 3],
+              ],
+            },
+            ast,
+          ),
         ).toMatchSnapshot();
         expect(
           validateAgainstAST({sets: [null, [1, 2], true]}, ast),

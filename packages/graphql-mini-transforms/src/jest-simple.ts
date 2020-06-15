@@ -20,8 +20,8 @@ const transformer: Transformer = {
     const {imports, source} = extractImports(rawSource);
 
     const utilityImports = `
-      var {print} = require('graphql');
-      var {cleanDocument} = require(${JSON.stringify(
+      var {print, parse} = require('graphql');
+      var {cleanDocument, toSimpleDocument} = require(${JSON.stringify(
         `${__dirname}/document.js`,
       )});
     `;
@@ -38,7 +38,7 @@ const transformer: Transformer = {
     const appendDefinitionsSource = imports
       .map(
         (_, index) =>
-          `document.definitions.push.apply(document.definitions, importedDocument${index}.definitions);`,
+          `document.definitions.push.apply(document.definitions, parse(importedDocument${index}.source).definitions);`,
       )
       .join('\n');
 
@@ -50,7 +50,7 @@ const transformer: Transformer = {
 
       ${appendDefinitionsSource}
 
-      module.exports = cleanDocument(document, {removeUnused: false});
+      module.exports = toSimpleDocument(cleanDocument(document, {removeUnused: false}));
     `;
   },
 };

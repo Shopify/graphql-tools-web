@@ -1,5 +1,6 @@
 import {existsSync} from 'fs';
 import {promisify} from 'util';
+
 import {GraphQLConfig, GraphQLProjectConfig} from 'graphql-config';
 
 // we need to use an import/require here because it does not force consumers to
@@ -55,9 +56,7 @@ export function resolveSchemaPath(
       [
         `Schema not found${forProject}.`,
         `Expected to find the schema at '${schemaPath}' but the path does not exist.`,
-        `Check '${
-          project.configPath
-        }' and verify that schemaPath is configured correctly${forProject}.`,
+        `Check '${project.configPath}' and verify that schemaPath is configured correctly${forProject}.`,
       ].join(' '),
     );
   }
@@ -93,15 +92,17 @@ export function getGraphQLSchemaPaths(config: GraphQLConfig) {
 export async function getGraphQLProjectIncludedFilePaths(
   projectConfig: GraphQLProjectConfig,
 ) {
-  return (await Promise.all(
-    projectConfig.includes.map((include) =>
-      promisify(glob)(resolvePathRelativeToConfig(projectConfig, include), {
-        ignore: projectConfig.excludes.map((exclude) =>
-          resolvePathRelativeToConfig(projectConfig, exclude),
-        ),
-      }),
-    ),
-  )).reduce((allFilePaths, filePaths) => allFilePaths.concat(filePaths), []);
+  return (
+    await Promise.all(
+      projectConfig.includes.map((include) =>
+        promisify(glob)(resolvePathRelativeToConfig(projectConfig, include), {
+          ignore: projectConfig.excludes.map((exclude) =>
+            resolvePathRelativeToConfig(projectConfig, exclude),
+          ),
+        }),
+      ),
+    )
+  ).reduce((allFilePaths, filePaths) => allFilePaths.concat(filePaths), []);
 }
 
 export function getGraphQLProjectForSchemaPath(

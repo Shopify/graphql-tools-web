@@ -5,6 +5,22 @@ and from `v0.14.0`, this project adheres to [Semantic Versioning](http://semver.
 
 <!-- ## [Unreleased] -->
 
+## [1.2.0] - 2020-04-27
+
+### Added
+
+- Added a new `{simple: true}` option to the `graphql-mini-transforms/webpack` loader to produce GraphQL exports without any AST [[#114](https://github.com/Shopify/graphql-tools-web/pull/114)]
+- Added a new `graphql-mini-transforms/jest-simple` transformer that produces the same shape as the webpack loader’s `simple` option [[#114](https://github.com/Shopify/graphql-tools-web/pull/114)]
+
+## [1.1.0] - 2020-04-14
+
+### Changed
+
+- Update dependencies (`@types/webpack`) [[#110](https://github.com/Shopify/graphql-tools-web/pull/110)]
+- Upgrade fs-extra to v9 [[#105](https://github.com/Shopify/graphql-tools-web/pull/105)]
+- Upgrade prettier to `v2.0.4` and change `eslint-plugin-shopify` to `@shopify/eslint-plugin` [[#104](https://github.com/Shopify/graphql-tools-web/pull/104)]
+- Upgrade graphql to `v14.6.0` [[#104](https://github.com/Shopify/graphql-tools-web/pull/104)]
+
 ## [1.0.3] - 2019-04-29
 
 - Fixed issues with the Jest loader ([#81](https://github.com/Shopify/graphql-tools-web/pull/81))

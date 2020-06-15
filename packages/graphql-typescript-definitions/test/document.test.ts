@@ -1,8 +1,10 @@
 import * as path from 'path';
+
 import {buildSchema, parse, GraphQLSchema, Source, concatAST} from 'graphql';
 import {stripIndent} from 'common-tags';
 import {compile} from 'graphql-tool-utilities';
 
+import {ExportFormat} from '../src/types';
 import {printDocument, Options} from '../src/print/document';
 
 describe('printDocument()', () => {
@@ -1765,6 +1767,39 @@ describe('printDocument()', () => {
 
       expect(print('query Details { name }', schema)).toContain(stripIndent`
         declare const document: DocumentNode<DetailsQueryData, never, DetailsQueryPartialData>;
+        export default document;
+      `);
+    });
+  });
+
+  describe('simple', () => {
+    it('imports a SimpleDocument from graphql-typed', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(
+        print('query Details { name }', schema, {
+          printOptions: {exportFormat: ExportFormat.Simple},
+        }),
+      ).toContain('import { SimpleDocument } from "graphql-typed";');
+    });
+
+    it('exports a SimpleDocument as the default export with the operation data type annotation', () => {
+      const schema = buildSchema(`
+        type Query {
+          name: String!
+        }
+      `);
+
+      expect(
+        print('query Details { name }', schema, {
+          printOptions: {exportFormat: ExportFormat.Simple},
+        }),
+      ).toContain(stripIndent`
+        declare const document: SimpleDocument<DetailsQueryData, never, DetailsQueryPartialData>;
         export default document;
       `);
     });

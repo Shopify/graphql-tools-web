@@ -216,7 +216,7 @@ describe('createFiller()', () => {
         }
       `);
 
-      expect(fill(selfDocument).self).not.toEqual(fill(meDocument).me);
+      expect(fill(selfDocument).self).not.toStrictEqual(fill(meDocument).me);
     });
 
     it('uses different values for a list of keypaths', () => {
@@ -230,7 +230,9 @@ describe('createFiller()', () => {
 
       const data = fill(document, {self: {parents: () => [{}, {}]}});
 
-      expect(data.self.parents[0].name).not.toEqual(data.self.parents[1].name);
+      expect(data.self.parents[0].name).not.toStrictEqual(
+        data.self.parents[1].name,
+      );
     });
   });
 
@@ -592,7 +594,10 @@ describe('createFiller()', () => {
       function createFillerForInterfaceSchema(options?: Options) {
         const filler = createFiller(createInterfaceSchema(), options);
         return (document: DocumentNode, data?: any) =>
-          filler(document, data)({
+          filler(
+            document,
+            data,
+          )({
             query: document,
           });
       }
@@ -1218,6 +1223,44 @@ describe('createFiller()', () => {
       });
     });
 
+    it('fills a list with a random size and respect the min range value', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const fill = createFillerForSchema(`
+        type Query {
+          initials: [String!]!
+        }
+      `);
+
+      const document = createDocument<{initials: string[]}>(`
+        query Details {
+          initials
+        }
+      `);
+
+      expect(fill(document, {initials: list([1, 3])})).toStrictEqual({
+        initials: [expect.any(String)],
+      });
+    });
+
+    it('fills a list with a random size and respect the max range value', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(1);
+      const fill = createFillerForSchema(`
+        type Query {
+          initials: [String!]!
+        }
+      `);
+
+      const document = createDocument<{initials: string[]}>(`
+        query Details {
+          initials
+        }
+      `);
+
+      expect(fill(document, {initials: list([1, 3])})).toStrictEqual({
+        initials: [expect.any(String), expect.any(String), expect.any(String)],
+      });
+    });
+
     it('fills nested lists', () => {
       const fill = createFillerForSchema(`
         type Query {
@@ -1287,7 +1330,10 @@ function createFillerForSchema(schema: string, options?: Options) {
     document: DocumentNode<Data, {}, PartialData>,
     data?: any,
   ) =>
-    filler<Data, {}, PartialData>(document, data)({
+    filler<Data, {}, PartialData>(
+      document,
+      data,
+    )({
       query: document,
     });
 }

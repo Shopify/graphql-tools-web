@@ -1,4 +1,4 @@
-import {ucFirst} from 'change-case';
+import {upperCaseFirst} from 'upper-case-first';
 import {
   GraphQLCompositeType,
   // We need to bring these in as they are implicitly referenced by
@@ -14,20 +14,20 @@ import {
 import {Field} from 'graphql-tool-utilities';
 
 export class ObjectStack {
-  private seenFields = new Set<string>();
+  private readonly seenFields = new Set<string>();
 
   get name(): string {
     const {parent, field, isFragment, type} = this;
-    const fieldName = field ? ucFirst(field.responseName) : '';
+    const fieldName = field ? upperCaseFirst(field.responseName) : '';
     const name = `${parent ? parent.name : ''}${fieldName}`;
     return isFragment ? `${name}${type ? type.name : 'Other'}` : name;
   }
 
   constructor(
-    private type?: GraphQLCompositeType,
-    private field?: Field,
-    private parent?: ObjectStack,
-    private isFragment = false,
+    private readonly type?: GraphQLCompositeType,
+    private readonly field?: Field,
+    private readonly parent?: ObjectStack,
+    private readonly isFragment = false,
   ) {}
 
   nested(field: Field, type: GraphQLCompositeType) {

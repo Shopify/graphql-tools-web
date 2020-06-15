@@ -1,5 +1,4 @@
 import * as t from '@babel/types';
-
 import {GraphQLObjectType} from 'graphql';
 import {
   AST,
@@ -8,6 +7,8 @@ import {
   Operation,
   OperationType,
 } from 'graphql-tool-utilities';
+
+import {ExportFormat} from '../../types';
 
 import {Options, FileContext, OperationContext} from './context';
 import {ObjectStack} from './utilities';
@@ -116,21 +117,19 @@ export function printDocument(
   const {schemaImports} = file;
   const {namespace} = context;
   const {namespace: partialNamespace} = partialContext;
+  const {exportFormat = ExportFormat.Document} = options;
+  const documentType =
+    exportFormat === ExportFormat.Document ? 'DocumentNode' : 'SimpleDocument';
 
   const documentNodeImport = t.importDeclaration(
-    [
-      t.importSpecifier(
-        t.identifier('DocumentNode'),
-        t.identifier('DocumentNode'),
-      ),
-    ],
+    [t.importSpecifier(t.identifier(documentType), t.identifier(documentType))],
     t.stringLiteral('graphql-typed'),
   );
 
   const documentNodeDeclaratorIdentifier = t.identifier('document');
   documentNodeDeclaratorIdentifier.typeAnnotation = t.tsTypeAnnotation(
     t.tsTypeReference(
-      t.identifier('DocumentNode'),
+      t.identifier(documentType),
       t.tsTypeParameterInstantiation([
         t.tsTypeReference(t.identifier(context.typeName)),
         variables || t.tsNeverKeyword(),

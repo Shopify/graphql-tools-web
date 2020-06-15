@@ -1,9 +1,11 @@
 import {join} from 'path';
+
 import {
   GraphQLConfig,
   GraphQLConfigData,
   GraphQLProjectConfig,
 } from 'graphql-config';
+
 import {
   defaultGraphQLProjectName,
   getGraphQLProjectForSchemaPath,
@@ -168,7 +170,7 @@ describe('getGraphQLSchemaPaths()', () => {
     existsSync.mockClear();
   });
 
-  it('returns schemaPath for each project ', () => {
+  it('returns schemaPath for each project', () => {
     const config = new GraphQLConfig(
       {
         schemaPath: '',

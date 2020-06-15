@@ -1,22 +1,25 @@
 import {createHash} from 'crypto';
+
 import {
   print,
   parse,
-  DocumentNode,
+  DocumentNode as UntypedDocumentNode,
   DefinitionNode,
   SelectionSetNode,
   ExecutableDefinitionNode,
+  OperationDefinitionNode,
   SelectionNode,
   Location,
 } from 'graphql';
+import {DocumentNode, SimpleDocument} from 'graphql-typed';
 
 const IMPORT_REGEX = /^#import\s+['"]([^'"]*)['"];?[\s\n]*/gm;
 const DEFAULT_NAME = 'Operation';
 
 export function cleanDocument(
-  document: DocumentNode,
+  document: UntypedDocumentNode,
   {removeUnused = true} = {},
-) {
+): DocumentNode<any, any, any> {
   if (removeUnused) {
     removeUnusedDefinitions(document);
   }
@@ -35,9 +38,7 @@ export function cleanDocument(
   // This ID is a hash of the full file contents that are part of the document,
   // including other documents that are injected in, but excluding any unused
   // fragments. This is useful for things like persisted queries.
-  const id = createHash('sha256')
-    .update(normalizedSource)
-    .digest('hex');
+  const id = createHash('sha256').update(normalizedSource).digest('hex');
 
   Reflect.defineProperty(normalizedDocument, 'id', {
     value: id,
@@ -53,7 +54,7 @@ export function cleanDocument(
     configurable: false,
   });
 
-  return normalizedDocument;
+  return normalizedDocument as any;
 }
 
 export function extractImports(rawSource: string) {
@@ -67,7 +68,24 @@ export function extractImports(rawSource: string) {
   return {imports: [...imports], source};
 }
 
-function removeUnusedDefinitions(document: DocumentNode) {
+export function toSimpleDocument<Data, Variables, DeepPartial>(
+  document: DocumentNode<Data, Variables, DeepPartial>,
+): SimpleDocument<Data, Variables, DeepPartial> {
+  return {
+    id: document.id,
+    name: operationNameForDocument(document),
+    source: document.loc?.source?.body!,
+  };
+}
+
+function operationNameForDocument(document: DocumentNode) {
+  return document.definitions.find(
+    (definition): definition is OperationDefinitionNode =>
+      definition.kind === 'OperationDefinition',
+  )?.name?.value;
+}
+
+function removeUnusedDefinitions(document: UntypedDocumentNode) {
   const usedDefinitions = new Set<DefinitionNode>();
   const dependencies = definitionDependencies(document.definitions);
 

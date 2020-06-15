@@ -19,6 +19,7 @@ import {
   InlineFragment,
   Operation,
 } from 'graphql-tool-utilities';
+
 import {randomFromArray, chooseNull} from './utilities';
 
 export interface FieldMetadata {
@@ -78,14 +79,29 @@ export type DeepThunk<T, Data, Variables, DeepPartial> = T extends object
               | null
               | undefined
           : T[P] extends infer U | null | undefined
-          ? (DeepThunk<U, Data, Variables, DeepPartial> | null | undefined)
+          ? DeepThunk<U, Data, Variables, DeepPartial> | null | undefined
           : T[P],
         Data,
         Variables,
         DeepPartial
-      >
+      >;
     }
   : T;
+
+export type GraphQLFillerData<
+  Operation extends GraphQLOperation
+> = Operation extends GraphQLOperation<
+  infer Data,
+  infer Variables,
+  infer PartialData
+>
+  ? Thunk<
+      DeepThunk<PartialData, Data, Variables, PartialData>,
+      Data,
+      Variables,
+      PartialData
+    >
+  : never;
 
 export interface Options {
   resolvers?: {[key: string]: Resolver};
@@ -129,12 +145,7 @@ export function createFiller(
 
   return function fill<Data, Variables, PartialData>(
     _document: GraphQLOperation<Data, Variables, PartialData>,
-    data?: Thunk<
-      DeepThunk<PartialData, Data, Variables, PartialData>,
-      Data,
-      Variables,
-      PartialData
-    >,
+    data?: GraphQLFillerData<GraphQLOperation<Data, Variables, PartialData>>,
   ): (request: GraphQLRequest<Data, Variables, PartialData>) => Data {
     return (request: GraphQLRequest<Data, Variables, PartialData>) => {
       const {operationName, query} = request;
@@ -493,8 +504,9 @@ export function list<T = {}, Data = {}, Variables = {}, DeepPartial = {}>(
   size: number | [number, number],
   partial?: Thunk<T, Data, Variables, DeepPartial>,
 ): Thunk<T, Data, Variables, DeepPartial>[] {
-  const finalSize =
-    typeof size === 'number' ? size : size[Math.round(Math.random())];
+  const randomSize = ([min, max]: number[]) =>
+    Math.round(Math.random() * (max - min) + min);
+  const finalSize = typeof size === 'number' ? size : randomSize(size);
   return Array<Thunk<T, Data, Variables, DeepPartial>>(finalSize).fill(
     partial as Thunk<T, Data, Variables, DeepPartial>,
   );
