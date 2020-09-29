@@ -16,9 +16,26 @@ import {DocumentNode, SimpleDocument} from 'graphql-typed';
 const IMPORT_REGEX = /^#import\s+['"]([^'"]*)['"];?[\s\n]*/gm;
 const DEFAULT_NAME = 'Operation';
 
+function defaultGenerateId(normalizedSource: string) {
+  // This ID is a hash of the full file contents that are part of the document,
+  // including other documents that are injected in, but excluding any unused
+  // fragments. This is useful for things like persisted queries.
+  return createHash('sha256')
+    .update(minifySource(normalizedSource))
+    .digest('hex');
+}
+
+export interface CleanDocumentOptions {
+  removeUnused?: boolean;
+  generateId?: (normalizedSource: string) => string;
+}
+
 export function cleanDocument(
   document: UntypedDocumentNode,
-  {removeUnused = true} = {},
+  {
+    removeUnused = true,
+    generateId = defaultGenerateId,
+  }: CleanDocumentOptions = {},
 ): DocumentNode<any, any, any> {
   if (removeUnused) {
     removeUnusedDefinitions(document);
@@ -35,10 +52,7 @@ export function cleanDocument(
     stripLoc(definition);
   }
 
-  // This ID is a hash of the full file contents that are part of the document,
-  // including other documents that are injected in, but excluding any unused
-  // fragments. This is useful for things like persisted queries.
-  const id = createHash('sha256').update(normalizedSource).digest('hex');
+  const id = generateId(print(document));
 
   Reflect.defineProperty(normalizedDocument, 'id', {
     value: id,

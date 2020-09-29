@@ -3,12 +3,31 @@ import {dirname} from 'path';
 import {loader} from 'webpack';
 import {parse, DocumentNode} from 'graphql';
 import {getOptions} from 'loader-utils';
+import validateOptions from 'schema-utils';
 
-import {cleanDocument, extractImports, toSimpleDocument} from './document';
+import {
+  cleanDocument,
+  extractImports,
+  toSimpleDocument,
+  CleanDocumentOptions,
+} from './document';
 
 interface Options {
+  generateId?: (normalizedSource: string) => string;
   simple?: boolean;
 }
+
+const schema = {
+  type: 'object' as const,
+  properties: {
+    simple: {
+      type: 'boolean' as const,
+    },
+    generateId: {
+      instanceof: 'Function' as const,
+    },
+  },
+};
 
 export default async function graphQLLoader(
   this: loader.LoaderContext,
@@ -17,7 +36,9 @@ export default async function graphQLLoader(
   this.cacheable();
 
   const done = this.async();
-  const {simple = false} = getOptions(this) as Options;
+  const options = {simple: false, ...getOptions(this)} as Options;
+
+  validateOptions(schema, options, {name: '@shopify/graphql-mini-transforms'});
 
   if (done == null) {
     throw new Error(
@@ -25,11 +46,16 @@ export default async function graphQLLoader(
     );
   }
 
+  const cleanDocumentOptions = {
+    generateId: options.generateId,
+  } as CleanDocumentOptions;
+
   try {
     const document = cleanDocument(
       await loadDocument(source, this.context, this),
+      cleanDocumentOptions,
     );
-    const exported = simple ? toSimpleDocument(document) : document;
+    const exported = options.simple ? toSimpleDocument(document) : document;
 
     done(
       null,

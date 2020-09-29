@@ -70,6 +70,14 @@ describe('graphql-mini-transforms/webpack', () => {
     );
   });
 
+  it('has option for custom ID generate function', async () => {
+    const result = await extractDocumentExport(
+      `query Shop { shop { id } }`,
+      createLoaderContext({query: {generateId: () => 'foo'}}),
+    );
+    expect(result).toHaveProperty('id', 'foo');
+  });
+
   describe('import', () => {
     it('adds the resolved import as a dependency', async () => {
       const context = '/app/';
