@@ -5,12 +5,7 @@ import {parse, DocumentNode} from 'graphql';
 import {getOptions} from 'loader-utils';
 import validateOptions from 'schema-utils';
 
-import {
-  cleanDocument,
-  extractImports,
-  toSimpleDocument,
-  CleanDocumentOptions,
-} from './document';
+import {cleanDocument, extractImports, toSimpleDocument} from './document';
 
 interface Options {
   generateId?: (normalizedSource: string) => string;
@@ -36,7 +31,7 @@ export default async function graphQLLoader(
   this.cacheable();
 
   const done = this.async();
-  const options = {simple: false, ...getOptions(this)} as Options;
+  const options: Options = {simple: false, ...getOptions(this)};
 
   validateOptions(schema, options, {name: '@shopify/graphql-mini-transforms'});
 
@@ -46,14 +41,10 @@ export default async function graphQLLoader(
     );
   }
 
-  const cleanDocumentOptions = {
-    generateId: options.generateId,
-  } as CleanDocumentOptions;
-
   try {
     const document = cleanDocument(
       await loadDocument(source, this.context, this),
-      cleanDocumentOptions,
+      {generateId: options.generateId},
     );
     const exported = options.simple ? toSimpleDocument(document) : document;
 
