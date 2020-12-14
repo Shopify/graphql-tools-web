@@ -45,14 +45,15 @@ export function cleanDocument(
     addTypename(definition);
   }
 
-  const normalizedSource = minifySource(print(document));
+  const documentSource = print(document);
+  const normalizedSource = minifySource(documentSource);
   const normalizedDocument = parse(normalizedSource);
 
   for (const definition of normalizedDocument.definitions) {
     stripLoc(definition);
   }
 
-  const id = generateId(print(document));
+  const id = generateId(documentSource);
 
   Reflect.defineProperty(normalizedDocument, 'id', {
     value: id,
