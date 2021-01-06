@@ -4,6 +4,7 @@ import {createHash} from 'crypto';
 import {loader} from 'webpack';
 import {stripIndent} from 'common-tags';
 
+import {GenerateIdArguments} from '../src/document';
 import graphQLLoader from '../src/webpack';
 
 describe('graphql-mini-transforms/webpack', () => {
@@ -74,22 +75,24 @@ describe('graphql-mini-transforms/webpack', () => {
     // Mock function can't be called directly due to API schema validation, see
     // https://github.com/facebook/jest/issues/6329
     const _generateId = jest.fn((_) => 'foo');
-    const generateId = (src: string) => _generateId(src);
+    const generateId = (args: GenerateIdArguments) => _generateId(args);
     const result = await extractDocumentExport(
       `query Shop { shop { id } }`,
       createLoaderContext({query: {generateId}}),
     );
     expect(_generateId).toHaveBeenCalledWith(
-      expect.toStartWith(
-        stripIndent`
-          query Shop {
-            shop {
-              id
-              __typename
+      expect.objectContaining({
+        source: expect.toStartWith(
+          stripIndent`
+            query Shop {
+              shop {
+                id
+                __typename
+              }
             }
-          }
-        `,
-      ),
+          `,
+        ),
+      })
     );
     expect(result).toHaveProperty('id', 'foo');
   });

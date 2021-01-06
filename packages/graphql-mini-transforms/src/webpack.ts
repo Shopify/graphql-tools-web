@@ -5,10 +5,15 @@ import {parse, DocumentNode} from 'graphql';
 import {getOptions} from 'loader-utils';
 import validateOptions from 'schema-utils';
 
-import {cleanDocument, extractImports, toSimpleDocument} from './document';
+import {
+  cleanDocument,
+  extractImports,
+  toSimpleDocument,
+  GenerateIdArguments,
+} from './document';
 
 interface Options {
-  generateId?: (normalizedSource: string) => string;
+  generateId?: (args: GenerateIdArguments) => string;
   simple?: boolean;
 }
 

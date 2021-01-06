@@ -84,7 +84,7 @@ If this option is set to `true`, you should also use the `jest-simple` transform
 
 ##### `generateId`
 
-This option changes the identifier value used. By default the hash of the minified GraphQL document is used as the identifier value, but when `generateId` is provided the return value is used as the identifier value. `generateId` should be a function which takes a single parameter, the normalized GraphQL document source as a string, and it should return a string value.
+This option changes the identifier value used. By default the hash of the minified GraphQL document is used as the identifier value, but when `generateId` is provided the return value is used as the identifier value. `generateId` should be a function which takes a single parameter, an object with the normalized GraphQL document source as a string under the `source` key, and it should return a string value.
 
 ```js
 module.exports = {
@@ -94,7 +94,7 @@ module.exports = {
         test: /\.(graphql|gql)$/,
         use: 'graphql-mini-transforms/webpack',
         exclude: /node_modules/,
-        options: {generateId: normalizedSource => someHash(normalizedSource)},
+        options: {generateId: ({source}) => someHash(source)},
       },
     ],
   },
