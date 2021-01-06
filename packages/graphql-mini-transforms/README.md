@@ -61,7 +61,7 @@ fragment ProductVariantId on ProductVariant {
 
 #### Options
 
-##### simple
+##### `simple`
 
 This option changes the shape of the value exported from `.graphql` files. By default, a `graphql-typed` `DocumentNode` is exported, but when `simple` is set to `true`, a `SimpleDocument` is exported instead. This representation of GraphQL documents is smaller than a full `DocumentNode`, but generally won’t work with normalized GraphQL caches.
 
@@ -82,11 +82,9 @@ module.exports = {
 
 If this option is set to `true`, you should also use the `jest-simple` transformer for Jest, and the `--export-format simple` flag for `graphql-typescript-definitions`.
 
-##### generateId
+##### `generateId`
 
-This option changes the identifier value used. By default the hash of the minified GraphQL document is used as the identifier value, but when `generateId` is provided
-the return value is used as the identifier value. `generateId` should be a function which takes a single parameter, the normalized GraphQL document source as a string,
-and it should return a string value.
+This option changes the identifier value used. By default the hash of the minified GraphQL document is used as the identifier value, but when `generateId` is provided the return value is used as the identifier value. `generateId` should be a function which takes a single parameter, the normalized GraphQL document source as a string, and it should return a string value.
 
 ```js
 module.exports = {

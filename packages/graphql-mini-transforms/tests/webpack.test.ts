@@ -70,10 +70,26 @@ describe('graphql-mini-transforms/webpack', () => {
     );
   });
 
-  it('has option for custom ID generate function', async () => {
+  it('uses the generateId option for the document ID when provided', async () => {
+    // Mock function can't be called directly due to API schema validation, see
+    // https://github.com/facebook/jest/issues/6329
+    const _generateId = jest.fn((_) => 'foo');
+    const generateId = (src: string) => _generateId(src);
     const result = await extractDocumentExport(
       `query Shop { shop { id } }`,
-      createLoaderContext({query: {generateId: () => 'foo'}}),
+      createLoaderContext({query: {generateId}}),
+    );
+    expect(_generateId).toHaveBeenCalledWith(
+      expect.toStartWith(
+        stripIndent`
+          query Shop {
+            shop {
+              id
+              __typename
+            }
+          }
+        `,
+      ),
     );
     expect(result).toHaveProperty('id', 'foo');
   });
