@@ -92,7 +92,7 @@ describe('graphql-mini-transforms/webpack', () => {
             }
           `,
         ),
-      })
+      }),
     );
     expect(result).toHaveProperty('id', 'foo');
   });
