@@ -1,6 +1,0 @@
-query FindPerson($role: Role) {
-  person(job: $role) {
-    id
-    ...PersonFields
-  }
-}

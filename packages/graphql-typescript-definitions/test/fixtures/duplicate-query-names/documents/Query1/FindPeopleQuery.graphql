@@ -1,5 +1,0 @@
-query FindPeople {
-  people {
-    id
-  }
-}

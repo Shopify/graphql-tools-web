@@ -1,6 +1,0 @@
-query FindPerson1 {
-  person {
-    id
-    ...PersonFields1
-  }
-}
